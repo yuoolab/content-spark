@@ -112,7 +112,7 @@ const INITIAL_PLATFORMS: PlatformData[] = [
 ];
 
 const INITIAL_AI_REVIEW_CONFIG: AiReviewConfig = {
-  enabled: true,
+  enabled: false,
 };
 
 /* ─── Constants ────────────────────────────────────────────────────────────── */

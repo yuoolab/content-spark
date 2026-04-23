@@ -695,7 +695,7 @@ export function ContentReview() {
   const [approveTarget, setApproveTarget] = useState<string | null>(null);
   const [reasonViewText, setReasonViewText] = useState<string | null>(null);
   const [aiReviewOpen, setAiReviewOpen] = useState(false);
-  const [aiReviewEnabled, setAiReviewEnabled] = useState(true);
+  const [aiReviewEnabled, setAiReviewEnabled] = useState(false);
   const [taskIdQuery, setTaskIdQuery] = useState('');
   const [userPhoneQuery, setUserPhoneQuery] = useState('');
   const [publishStart, setPublishStart] = useState(''); // YYYY-MM-DD
