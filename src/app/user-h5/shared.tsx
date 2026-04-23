@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { ArrowLeft, LayoutDashboard, LayoutList, User } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { PageAnnotations } from "../components/annotations/PageAnnotations";
 
 export const NAV_ITEMS = [
   { path: "/tasks", label: "任务", icon: LayoutList },
@@ -364,6 +365,7 @@ export function NavShell() {
           </div>
         </div>
       )}
+      <PageAnnotations scope="h5" />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   MonitorPlay,
 } from 'lucide-react';
+import { PageAnnotations } from '../annotations/PageAnnotations';
 
 const sidebarGroups = [
   {
@@ -262,6 +263,7 @@ export function ShopLayout() {
         <MonitorPlay size={16} />
         预览小程序
       </Link>
+      <PageAnnotations scope="backend" />
     </div>
   );
 }
