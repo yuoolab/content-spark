@@ -33,6 +33,8 @@ import { Card, Container, Pill, SectionTitle, fmtNumber } from "../shared";
 import { PlatformBadge } from "../../components/platform/PlatformBadge";
 
 type DetailScene = NonNullable<Task["scene"]>;
+type FollowProofStatus = "待完成" | "已完成" | "审核中" | "已拒绝";
+type FollowProofState = { status: FollowProofStatus; rejectReason?: string; proofUrl?: string };
 
 const formatTaskRange = (startDate: string, endDate: string) =>
   `${startDate.split("-").join("/")} 至 ${endDate.split("-").join("/")}`;
@@ -359,7 +361,13 @@ function SceneTaskDetail({
   const [copiedAccount, setCopiedAccount] = useState("");
   const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
   const [showRankingSheet, setShowRankingSheet] = useState(false);
-  const [followProofs, setFollowProofs] = useState<Record<number, string>>({});
+  const [followProofStates, setFollowProofStates] = useState<Record<number, FollowProofState>>({
+    0: { status: "待完成" },
+    1: { status: "已完成" },
+    2: { status: "审核中" },
+    3: { status: "已拒绝", rejectReason: "截图未包含主页名称与已关注状态，请按示例图重新上传。" },
+  });
+  const [followUploadSheet, setFollowUploadSheet] = useState<{ index: number; fileUrl: string } | null>(null);
   const meta = getDetailSceneMeta(scene);
   const targets = task.followTargets ?? [];
   const actions = task.engagementActions ?? [];
@@ -401,7 +409,7 @@ function SceneTaskDetail({
   const handleSubmitSingleFollowProof = (index: number) => {
     const target = targets[index];
     if (!target) return;
-    if (!followProofs[index]) {
+    if (!followUploadSheet?.fileUrl || followUploadSheet.index !== index) {
       toast.error("请先上传该账号的关注截图");
       return;
     }
@@ -421,11 +429,20 @@ function SceneTaskDetail({
       accountHandle: account.accountHandle,
     });
     if (result.ok) {
-      toast.success("该账号截图已提交");
+      setFollowProofStates((prev) => ({
+        ...prev,
+        [index]: { status: "审核中", proofUrl: followUploadSheet.fileUrl },
+      }));
+      setFollowUploadSheet(null);
+      toast.success("截图已提交，等待审核");
       return;
     }
     toast.error(result.message);
   };
+
+  const openFollowUploadSheet = (index: number) => setFollowUploadSheet({ index, fileUrl: "" });
+  const closeFollowUploadSheet = () => setFollowUploadSheet(null);
+  const activeFollowState = followUploadSheet ? followProofStates[followUploadSheet.index] : undefined;
 
   return (
     <Container>
@@ -480,14 +497,23 @@ function SceneTaskDetail({
             <div style={{ display: "grid", gap: 10 }}>
               {targets.map((target, index) => (
                 <div key={`${target.platform}-${target.account}-${index}`} style={followTargetCardStyle}>
+                  {(() => {
+                    const followState = followProofStates[index]?.status ?? "待完成";
+                    const hideUpload = followState === "已完成" || followState === "审核中";
+                    const isRejected = followState === "已拒绝";
+                    const rejectReason = followProofStates[index]?.rejectReason;
+                    return (
+                      <>
                   <div style={{ display: "flex", gap: 10, minWidth: 0, alignItems: "center", flex: 1 }}>
                     <div style={sceneIndexStyle(meta.accent)}>{index + 1}</div>
                     <div style={{ minWidth: 0, display: "grid", gap: 6, flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <PlatformBadge platform={target.platform} size={13} style={{ width: "fit-content" }} />
                         <div style={scenePrimaryTextStyle}>{target.account}</div>
+                        <span style={followStatusTagStyle(followState)}>{followState}</span>
                       </div>
                       <div style={detailSecondaryTextStyle}>关注完成后需保留主页名称与“已关注”状态的截图。</div>
+                      {isRejected && rejectReason && <div style={followRejectedInlineStyle}>拒绝原因：{rejectReason}</div>}
                     </div>
                   </div>
                   <div style={followProofActionWrapStyle}>
@@ -510,25 +536,17 @@ function SceneTaskDetail({
                         </button>
                       )}
                     </div>
-                    <div style={followProofUploadRowStyle}>
-                      <label style={followProofUploadLabelStyle(followProofs[index])}>
-                        {followProofs[index] ? "已上传截图" : "上传截图"}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={{ display: "none" }}
-                          onChange={(event) => {
-                            const file = event.target.files?.[0];
-                            if (!file) return;
-                            setFollowProofs((prev) => ({ ...prev, [index]: URL.createObjectURL(file) }));
-                          }}
-                        />
-                      </label>
-                      <button type="button" style={followProofSubmitButtonStyle} onClick={() => handleSubmitSingleFollowProof(index)}>
-                        提交该账号
-                      </button>
-                    </div>
+                    {!hideUpload && (
+                      <div style={followProofUploadRowStyle}>
+                        <button type="button" style={followProofUploadTriggerStyle(isRejected)} onClick={() => openFollowUploadSheet(index)}>
+                          {isRejected ? "重新上传" : "上传截图"}
+                        </button>
+                      </div>
+                    )}
                   </div>
+                      </>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
@@ -793,6 +811,54 @@ function SceneTaskDetail({
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {followUploadSheet && scene === "follow" && (
+        <div style={followUploadBackdropStyle} onClick={closeFollowUploadSheet}>
+          <div style={followUploadSheetStyle} onClick={(event) => event.stopPropagation()}>
+            <div style={followUploadHeadStyle}>
+              <div style={followUploadTitleStyle}>
+                上传关注截图（{followUploadSheet.index + 1}/{targets.length}）
+              </div>
+              <button type="button" onClick={closeFollowUploadSheet} style={followUploadCloseStyle}>
+                关闭
+              </button>
+            </div>
+            {activeFollowState?.status === "已拒绝" && activeFollowState.rejectReason && (
+              <div style={followUploadRejectReasonStyle}>拒绝原因：{activeFollowState.rejectReason}</div>
+            )}
+            <label style={followUploadPickerStyle(Boolean(followUploadSheet.fileUrl))}>
+              {followUploadSheet.fileUrl ? (
+                <img src={followUploadSheet.fileUrl} alt="关注截图预览" style={followUploadPreviewImageStyle} />
+              ) : (
+                <span style={followUploadPickerTextStyle}>点击选择截图</span>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  setFollowUploadSheet((prev) => (prev ? { ...prev, fileUrl: URL.createObjectURL(file) } : prev));
+                }}
+              />
+            </label>
+            <button
+              type="button"
+              style={followUploadSubmitInSheetStyle}
+              onClick={() => {
+                if (!followUploadSheet.fileUrl) {
+                  toast.error("请先选择一张截图");
+                  return;
+                }
+                handleSubmitSingleFollowProof(followUploadSheet.index);
+              }}
+            >
+              提交截图
+            </button>
           </div>
         </div>
       )}
@@ -1524,34 +1590,133 @@ const followProofUploadRowStyle: React.CSSProperties = {
   justifyItems: "end",
 };
 
-const followProofUploadLabelStyle = (hasValue?: string): React.CSSProperties => ({
+const followStatusTagStyle = (status: FollowProofStatus): React.CSSProperties => {
+  const tone =
+    status === "已完成"
+      ? { border: "rgba(34,197,94,0.30)", bg: "rgba(34,197,94,0.12)", color: "#15803d" }
+      : status === "审核中"
+      ? { border: "rgba(59,130,246,0.26)", bg: "rgba(59,130,246,0.10)", color: "#1d4ed8" }
+      : status === "已拒绝"
+      ? { border: "rgba(239,68,68,0.26)", bg: "rgba(239,68,68,0.10)", color: "#dc2626" }
+      : { border: "rgba(148,163,184,0.26)", bg: "rgba(148,163,184,0.10)", color: "#64748b" };
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    height: 22,
+    padding: "0 8px",
+    borderRadius: 999,
+    border: `1px solid ${tone.border}`,
+    background: tone.bg,
+    color: tone.color,
+    fontSize: 11,
+    fontWeight: 800,
+  };
+};
+
+const followRejectedInlineStyle: React.CSSProperties = {
+  fontSize: 11,
+  lineHeight: 1.5,
+  color: "#dc2626",
+  fontWeight: 700,
+};
+
+const followProofUploadTriggerStyle = (danger?: boolean): React.CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  minWidth: 94,
+  minWidth: 88,
   height: 28,
   padding: "0 10px",
   borderRadius: 999,
-  border: hasValue ? "1px solid rgba(34,197,94,0.26)" : "1px solid rgba(36,116,255,0.18)",
-  background: hasValue ? "rgba(34,197,94,0.10)" : "rgba(36,116,255,0.08)",
-  color: hasValue ? "#15803d" : "#2474ff",
+  border: danger ? "1px solid rgba(239,68,68,0.22)" : "1px solid rgba(36,116,255,0.18)",
+  background: danger ? "rgba(239,68,68,0.10)" : "rgba(36,116,255,0.08)",
+  color: danger ? "#dc2626" : "#2474ff",
   fontSize: 12,
   fontWeight: 800,
   cursor: "pointer",
 });
 
-const followProofSubmitButtonStyle: React.CSSProperties = {
-  display: "inline-flex",
+const followUploadBackdropStyle: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(15,23,42,0.42)",
+  zIndex: 70,
+  display: "flex",
+  alignItems: "flex-end",
+};
+
+const followUploadSheetStyle: React.CSSProperties = {
+  width: "100%",
+  borderTopLeftRadius: 22,
+  borderTopRightRadius: 22,
+  background: "#fff",
+  padding: "14px 14px calc(env(safe-area-inset-bottom) + 14px)",
+  display: "grid",
+  gap: 12,
+};
+
+const followUploadHeadStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+};
+
+const followUploadTitleStyle: React.CSSProperties = {
+  fontSize: 15,
+  color: "#0f172a",
+  fontWeight: 900,
+};
+
+const followUploadCloseStyle: React.CSSProperties = {
+  border: "none",
+  background: "transparent",
+  color: "#64748b",
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
+const followUploadRejectReasonStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.6,
+  color: "#dc2626",
+  background: "rgba(239,68,68,0.08)",
+  border: "1px solid rgba(239,68,68,0.16)",
+  borderRadius: 12,
+  padding: "8px 10px",
+};
+
+const followUploadPickerStyle = (hasImage: boolean): React.CSSProperties => ({
+  height: 176,
+  borderRadius: 14,
+  border: "1px dashed rgba(148,163,184,0.58)",
+  background: hasImage ? "#f8fafc" : "rgba(248,250,252,0.78)",
+  display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  minWidth: 94,
-  height: 30,
-  padding: "0 10px",
-  borderRadius: 999,
+  overflow: "hidden",
+  cursor: "pointer",
+});
+
+const followUploadPickerTextStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: "#64748b",
+  fontWeight: 700,
+};
+
+const followUploadPreviewImageStyle: React.CSSProperties = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
+};
+
+const followUploadSubmitInSheetStyle: React.CSSProperties = {
+  height: 42,
+  borderRadius: 12,
   border: "none",
   background: "#2474ff",
   color: "#fff",
-  fontSize: 12,
+  fontSize: 14,
   fontWeight: 900,
   cursor: "pointer",
 };
