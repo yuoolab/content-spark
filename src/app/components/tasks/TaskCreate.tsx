@@ -68,7 +68,7 @@ const sceneOptions: Array<{
   {
     key: 'seeding',
     label: '内容种草',
-    short: '发布原创内容并回传链接，适合征集原创笔记、短视频和测评内容',
+    short: '发布原创内容并回传链接，适合征集原创笔记、短视频和晒单内容',
     icon: Sparkles,
     accent: '#1d4ed8',
     bg: '#eff6ff',
@@ -383,7 +383,7 @@ export function TaskCreate() {
                                   ),
                                 })
                               }
-                              placeholder="上传引导文案（例如：请上传包含已关注状态的清晰截图）"
+                              placeholder="关注引导文案（例如：请上传包含已关注状态的清晰截图）"
                               maxLength={30}
                               style={inputStyle(showValidation && !target.guideText.trim())}
                             />

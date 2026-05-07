@@ -28,7 +28,7 @@ import { useNavigate, useParams } from "react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useUserH5 } from "../state";
-import type { Task, TaskRewardSpec } from "../state";
+import type { Platform, Task, TaskRewardSpec } from "../state";
 import { Card, Container, Pill, SectionTitle, fmtNumber } from "../shared";
 import { PlatformBadge } from "../../components/platform/PlatformBadge";
 
@@ -246,7 +246,7 @@ export function TaskListPage() {
 
 export function TaskDetailPage() {
   const { id = "" } = useParams();
-  const { tasks, submissions, subscribeTaskStartReminder } = useUserH5();
+  const { tasks, submissions, accounts, submitContent, subscribeTaskStartReminder } = useUserH5();
   const navigate = useNavigate();
   const [startReminderSubscribed, setStartReminderSubscribed] = useState(false);
   const task = tasks.find((item) => item.id === id);
@@ -316,6 +316,8 @@ export function TaskDetailPage() {
       task={task}
       scene={task.scene ?? "seeding"}
       rankingEntries={rankingEntries}
+      accounts={accounts}
+      submitContent={submitContent}
       startReminderSubscribed={startReminderSubscribed}
       onSubscribeStartReminder={handleSubscribeStartReminder}
     />
@@ -326,6 +328,8 @@ function SceneTaskDetail({
   task,
   scene,
   rankingEntries,
+  accounts,
+  submitContent,
   startReminderSubscribed,
   onSubscribeStartReminder,
 }: {
@@ -338,6 +342,16 @@ function SceneTaskDetail({
     platform: string;
     interactionScore: number;
   }>;
+  accounts: Array<{ platform: Platform; accountHandle: string }>;
+  submitContent: (payload: {
+    taskId: string;
+    platform: Platform;
+    title: string;
+    contentUrl: string;
+    contentPreview: string;
+    publishTime: string;
+    accountHandle: string;
+  }) => { ok: boolean; message: string };
   startReminderSubscribed: boolean;
   onSubscribeStartReminder: () => void;
 }) {
@@ -345,6 +359,7 @@ function SceneTaskDetail({
   const [copiedAccount, setCopiedAccount] = useState("");
   const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
   const [showRankingSheet, setShowRankingSheet] = useState(false);
+  const [followProofs, setFollowProofs] = useState<Record<number, string>>({});
   const meta = getDetailSceneMeta(scene);
   const targets = task.followTargets ?? [];
   const actions = task.engagementActions ?? [];
@@ -381,6 +396,35 @@ function SceneTaskDetail({
       if (activeKey) setCopiedAccount("");
       toast.error("复制失败，请稍后重试");
     }
+  };
+
+  const handleSubmitSingleFollowProof = (index: number) => {
+    const target = targets[index];
+    if (!target) return;
+    if (!followProofs[index]) {
+      toast.error("请先上传该账号的关注截图");
+      return;
+    }
+    const account = accounts.find((item) => item.platform === target.platform);
+    if (!account) {
+      toast.error(`请先完成 ${target.platform} 账号认证`);
+      return;
+    }
+
+    const result = submitContent({
+      taskId: task.id,
+      platform: target.platform,
+      title: `${task.name}｜${target.account} 关注凭证`,
+      contentUrl: `https://proof.local/follow/${task.id}/${index + 1}/${Date.now()}`,
+      contentPreview: task.proofDescription || "已按要求关注指定账号并提交截图凭证。",
+      publishTime: new Date().toLocaleString("zh-CN", { hour12: false }),
+      accountHandle: account.accountHandle,
+    });
+    if (result.ok) {
+      toast.success("该账号截图已提交");
+      return;
+    }
+    toast.error(result.message);
   };
 
   return (
@@ -446,24 +490,44 @@ function SceneTaskDetail({
                       <div style={detailSecondaryTextStyle}>关注完成后需保留主页名称与“已关注”状态的截图。</div>
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    <button
-                      type="button"
-                      onClick={() => void handleCopyText(target.account, target.account)}
-                      style={copyAccountIconButtonStyle(copiedAccount === target.account)}
-                      aria-label={`复制${target.account}`}
-                    >
-                      <Copy size={14} />
-                    </button>
-                    {target.sampleImage && (
+                  <div style={followProofActionWrapStyle}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
                       <button
                         type="button"
-                        onClick={() => setPreviewImage({ src: target.sampleImage ?? "", title: `${target.account} 示例图` })}
-                        style={sampleViewButtonStyle}
+                        onClick={() => void handleCopyText(target.account, target.account)}
+                        style={copyAccountIconButtonStyle(copiedAccount === target.account)}
+                        aria-label={`复制${target.account}`}
                       >
-                        示例图
+                        <Copy size={14} />
                       </button>
-                    )}
+                      {target.sampleImage && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage({ src: target.sampleImage ?? "", title: `${target.account} 示例图` })}
+                          style={sampleViewButtonStyle}
+                        >
+                          示例图
+                        </button>
+                      )}
+                    </div>
+                    <div style={followProofUploadRowStyle}>
+                      <label style={followProofUploadLabelStyle(followProofs[index])}>
+                        {followProofs[index] ? "已上传截图" : "上传截图"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: "none" }}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (!file) return;
+                            setFollowProofs((prev) => ({ ...prev, [index]: URL.createObjectURL(file) }));
+                          }}
+                        />
+                      </label>
+                      <button type="button" style={followProofSubmitButtonStyle} onClick={() => handleSubmitSingleFollowProof(index)}>
+                        提交该账号
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -671,7 +735,7 @@ function SceneTaskDetail({
         </div>
       )}
 
-      {task.status === "进行中" && (
+      {task.status === "进行中" && scene !== "follow" && (
         <div style={detailSubmitDockStyle}>
           <div style={detailSubmitInnerStyle}>
             <button onClick={() => navigate(`/submit?taskId=${task.id}`)} style={{ ...detailSubmitButtonStyle, background: meta.accent }}>
@@ -1438,13 +1502,58 @@ const followParticipantsStyle: React.CSSProperties = {
 
 const followTargetCardStyle: React.CSSProperties = {
   display: "flex",
-  alignItems: "center",
+  alignItems: "stretch",
   justifyContent: "space-between",
   gap: 12,
   padding: 12,
   borderRadius: 20,
   background: "linear-gradient(180deg, rgba(248,250,252,0.96), rgba(255,255,255,0.98))",
   border: "1px solid rgba(226,232,240,0.92)",
+};
+
+const followProofActionWrapStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 8,
+  minWidth: 126,
+  flexShrink: 0,
+};
+
+const followProofUploadRowStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 6,
+  justifyItems: "end",
+};
+
+const followProofUploadLabelStyle = (hasValue?: string): React.CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 94,
+  height: 28,
+  padding: "0 10px",
+  borderRadius: 999,
+  border: hasValue ? "1px solid rgba(34,197,94,0.26)" : "1px solid rgba(36,116,255,0.18)",
+  background: hasValue ? "rgba(34,197,94,0.10)" : "rgba(36,116,255,0.08)",
+  color: hasValue ? "#15803d" : "#2474ff",
+  fontSize: 12,
+  fontWeight: 800,
+  cursor: "pointer",
+});
+
+const followProofSubmitButtonStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 94,
+  height: 30,
+  padding: "0 10px",
+  borderRadius: 999,
+  border: "none",
+  background: "#2474ff",
+  color: "#fff",
+  fontSize: 12,
+  fontWeight: 900,
+  cursor: "pointer",
 };
 
 const sceneIndexStyle = (accent: string): React.CSSProperties => ({

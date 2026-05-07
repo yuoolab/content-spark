@@ -24,6 +24,8 @@ interface Submission {
   userAvatar: string;
   userPhone: string;
   taskName: string;
+  taskImage?: string;
+  scene?: 'follow' | 'engagement' | 'seeding' | 'engagement_reward';
   platform: string;
   contentUrl: string;
   contentTitle: string;
@@ -69,6 +71,15 @@ const STATUS_MAP = {
   rejected: { label: '已拒绝', bg: 'rgba(255,77,79,0.1)', color: 'rgba(255,77,79,1)' },
   deleted: { label: '已删除', bg: 'rgba(140,140,140,0.14)', color: 'rgba(89,89,89,1)' },
 };
+
+const SCENE_OPTIONS: { value: string; label: string; color: string; bg: string }[] = [
+  { value: 'follow', label: '账号加粉', color: '#0f766e', bg: '#ecfdf5' },
+  { value: 'engagement', label: '内容互动', color: '#c2410c', bg: '#fff7ed' },
+  { value: 'seeding', label: '内容种草', color: '#1d4ed8', bg: '#eff6ff' },
+  { value: 'engagement_reward', label: '效果种草', color: '#7c3aed', bg: '#f5f3ff' },
+];
+
+const PLATFORM_OPTIONS = ['小红书', '抖音', '哔哩哔哩'];
 
 const AVATAR_COLORS = [
   'linear-gradient(135deg, #667eea, #764ba2)',
@@ -694,12 +705,15 @@ export function ContentReview() {
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [approveTarget, setApproveTarget] = useState<string | null>(null);
   const [reasonViewText, setReasonViewText] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
   const [aiReviewOpen, setAiReviewOpen] = useState(false);
   const [aiReviewEnabled, setAiReviewEnabled] = useState(false);
   const [taskIdQuery, setTaskIdQuery] = useState('');
   const [userPhoneQuery, setUserPhoneQuery] = useState('');
   const [publishStart, setPublishStart] = useState(''); // YYYY-MM-DD
   const [publishEnd, setPublishEnd] = useState(''); // YYYY-MM-DD
+  const [sceneFilter, setSceneFilter] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
 
   const [submissions, setSubmissions] = useState<Submission[]>([
     {
@@ -710,6 +724,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[0],
       userPhone: '13800001111',
       taskName: '春季新品种草计划',
+      taskImage: 'https://picsum.photos/seed/task1001/200/200',
+      scene: 'seeding' as const,
       platform: '小红书',
       contentUrl: 'https://xiaohongshu.com/explore/xxxx',
       contentTitle: '春季必买！这款新品真的太好用了！',
@@ -729,6 +745,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[1],
       userPhone: '13900002222',
       taskName: '春季新品种草计划',
+      taskImage: 'https://picsum.photos/seed/task1001b/200/200',
+      scene: 'seeding' as const,
       platform: '小红书',
       contentUrl: 'https://xiaohongshu.com/explore/yyyy',
       contentTitle: '#春季新品 #品牌名 开箱测评来了',
@@ -748,6 +766,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[2],
       userPhone: '13700003333',
       taskName: '会员日专属福利',
+      taskImage: 'https://picsum.photos/seed/task1002/200/200',
+      scene: 'engagement_reward' as const,
       platform: '抖音',
       contentUrl: 'https://douyin.com/video/zzzz',
       contentTitle: '会员日福利来了！超多好物一站式分享',
@@ -755,6 +775,8 @@ export function ContentReview() {
       publishTime: '2026-04-17 09:12',
       submitTime: '2026-04-17 12:00',
       status: 'approved',
+      reviewedBy: '王敏',
+      reviewedAt: '2026-04-17 12:36',
       likes: 456,
       comments: 78,
       collections: 96,
@@ -767,6 +789,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[3],
       userPhone: '13600004444',
       taskName: '春季新品种草计划',
+      taskImage: 'https://picsum.photos/seed/task1001c/200/200',
+      scene: 'seeding' as const,
       platform: '小红书',
       contentUrl: 'https://xiaohongshu.com/explore/aaaa',
       contentTitle: '随便发个笔记',
@@ -775,6 +799,8 @@ export function ContentReview() {
       submitTime: '2026-04-17 10:30',
       status: 'rejected',
       rejectReason: '内容未包含必须话题标签',
+      reviewedBy: '系统审核员',
+      reviewedAt: '2026-04-17 11:02',
     },
     {
       id: '5',
@@ -784,6 +810,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[0],
       userPhone: '13500005555',
       taskName: '哔哩哔哩开箱挑战赛',
+      taskImage: 'https://picsum.photos/seed/task1003/200/200',
+      scene: 'engagement' as const,
       platform: '哔哩哔哩',
       contentUrl: 'https://bilibili.com/video/xxxxx',
       contentTitle: '【开箱】新品体验 真实感受分享',
@@ -803,6 +831,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[1],
       userPhone: '13400006666',
       taskName: '会员福利体验分享',
+      taskImage: 'https://picsum.photos/seed/task1004/200/200',
+      scene: 'follow' as const,
       platform: '抖音',
       contentUrl: 'https://douyin.com/video/deleted-demo',
       contentTitle: '试用记录：会员权益真实反馈',
@@ -822,6 +852,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[2],
       userPhone: '13300007777',
       taskName: '夏季防晒种草挑战',
+      taskImage: 'https://picsum.photos/seed/task1005/200/200',
+      scene: 'seeding' as const,
       platform: '小红书',
       contentUrl: 'https://xiaohongshu.com/explore/bbbb',
       contentTitle: '夏天真的离不开这支防晒',
@@ -841,6 +873,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[3],
       userPhone: '13200008888',
       taskName: '夏季防晒种草挑战',
+      taskImage: 'https://picsum.photos/seed/task1005b/200/200',
+      scene: 'seeding' as const,
       platform: '抖音',
       contentUrl: 'https://douyin.com/video/tttt',
       contentTitle: '防晒实测，通勤党可以直接抄作业',
@@ -860,6 +894,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[0],
       userPhone: '13100009999',
       taskName: '智能小家电体验官',
+      taskImage: 'https://picsum.photos/seed/task1006/200/200',
+      scene: 'engagement_reward' as const,
       platform: '哔哩哔哩',
       contentUrl: 'https://bilibili.com/video/yyyya',
       contentTitle: '一周实测：这台小家电值不值得买',
@@ -867,6 +903,8 @@ export function ContentReview() {
       publishTime: '2026-04-18 20:45',
       submitTime: '2026-04-18 21:10',
       status: 'approved',
+      reviewedBy: '李晨',
+      reviewedAt: '2026-04-18 21:42',
       likes: 542,
       comments: 93,
       collections: 110,
@@ -879,6 +917,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[1],
       userPhone: '13000001110',
       taskName: '智能小家电体验官',
+      taskImage: 'https://picsum.photos/seed/task1006b/200/200',
+      scene: 'engagement_reward' as const,
       platform: '小红书',
       contentUrl: 'https://xiaohongshu.com/explore/cccc',
       contentTitle: '真实测评，家里小空间也能用',
@@ -898,6 +938,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[2],
       userPhone: '13000002220',
       taskName: '旅行好物分享季',
+      taskImage: 'https://picsum.photos/seed/task1007/200/200',
+      scene: 'engagement' as const,
       platform: '抖音',
       contentUrl: 'https://douyin.com/video/uuuu',
       contentTitle: '出门旅行这几样真的很实用',
@@ -917,6 +959,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[3],
       userPhone: '13000003330',
       taskName: '旅行好物分享季',
+      taskImage: 'https://picsum.photos/seed/task1007b/200/200',
+      scene: 'engagement' as const,
       platform: '小红书',
       contentUrl: 'https://xiaohongshu.com/explore/dddd',
       contentTitle: '拍照、收纳两不误的旅行好物',
@@ -936,6 +980,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[0],
       userPhone: '13000004440',
       taskName: '城市探店打卡计划',
+      taskImage: 'https://picsum.photos/seed/task1008/200/200',
+      scene: 'follow' as const,
       platform: '哔哩哔哩',
       contentUrl: 'https://bilibili.com/video/zzzza',
       contentTitle: '周末探店合集，真的不踩雷',
@@ -944,6 +990,8 @@ export function ContentReview() {
       submitTime: '2026-04-18 14:00',
       status: 'rejected',
       rejectReason: '内容与任务无关',
+      reviewedBy: '赵琪',
+      reviewedAt: '2026-04-18 14:37',
     },
     {
       id: '14',
@@ -953,6 +1001,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[1],
       userPhone: '13000005550',
       taskName: '城市探店打卡计划',
+      taskImage: 'https://picsum.photos/seed/task1008b/200/200',
+      scene: 'follow' as const,
       platform: '抖音',
       contentUrl: 'https://douyin.com/video/vvvv',
       contentTitle: '探店记录：一口气逛完三家',
@@ -972,6 +1022,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[2],
       userPhone: '13000006660',
       taskName: '新品试用反馈收集',
+      taskImage: 'https://picsum.photos/seed/task1009/200/200',
+      scene: 'engagement_reward' as const,
       platform: '小红书',
       contentUrl: 'https://xiaohongshu.com/explore/eeee',
       contentTitle: '新品试用两天后的真实反馈',
@@ -979,6 +1031,8 @@ export function ContentReview() {
       publishTime: '2026-04-18 09:40',
       submitTime: '2026-04-18 10:08',
       status: 'approved',
+      reviewedBy: '周岩',
+      reviewedAt: '2026-04-18 10:28',
       likes: 89,
       comments: 16,
       collections: 21,
@@ -991,6 +1045,8 @@ export function ContentReview() {
       userAvatar: AVATAR_COLORS[3],
       userPhone: '13000007770',
       taskName: '新品试用反馈收集',
+      taskImage: 'https://picsum.photos/seed/task1009b/200/200',
+      scene: 'engagement_reward' as const,
       platform: '抖音',
       contentUrl: 'https://douyin.com/video/wwww',
       contentTitle: '分享一下这次试用的真实感受',
@@ -1063,9 +1119,14 @@ export function ContentReview() {
         (!start || publishDate >= start) &&
         (!end || publishDate <= end));
 
+    const matchesScene = !sceneFilter || s.scene === sceneFilter;
+    const matchesPlatform = !platformFilter || s.platform === platformFilter;
+
     return (
       matchesFilter &&
       matchesTaskId &&
+      matchesScene &&
+      matchesPlatform &&
       matchesPhone &&
       matchesPublishRange
     );
@@ -1221,6 +1282,50 @@ export function ContentReview() {
           </span>
         </div>
 
+        {/* Scene Filter */}
+        <select
+          value={sceneFilter}
+          onChange={(e) => { setSceneFilter(e.target.value); setPage(1); }}
+          style={{
+            height: '34px',
+            padding: '0 10px',
+            fontSize: 'var(--text-base)',
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            color: sceneFilter ? 'var(--foreground)' : 'var(--muted-foreground)',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <option value="">任务场景</option>
+          {SCENE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+
+        {/* Platform Filter */}
+        <select
+          value={platformFilter}
+          onChange={(e) => { setPlatformFilter(e.target.value); setPage(1); }}
+          style={{
+            height: '34px',
+            padding: '0 10px',
+            fontSize: 'var(--text-base)',
+            background: 'var(--card)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius)',
+            color: platformFilter ? 'var(--foreground)' : 'var(--muted-foreground)',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <option value="">所属平台</option>
+          {PLATFORM_OPTIONS.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+
         {/* Publish time range */}
         <div
           style={{
@@ -1271,13 +1376,15 @@ export function ContentReview() {
           />
         </div>
 
-        {(taskIdQuery || userPhoneQuery || publishStart || publishEnd) && (
+        {(taskIdQuery || userPhoneQuery || publishStart || publishEnd || sceneFilter || platformFilter) && (
           <button
             onClick={() => {
               setTaskIdQuery('');
               setUserPhoneQuery('');
               setPublishStart('');
               setPublishEnd('');
+              setSceneFilter('');
+              setPlatformFilter('');
               setPage(1);
             }}
             style={{
@@ -1296,26 +1403,6 @@ export function ContentReview() {
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={() => setAiReviewOpen(true)}
-          style={{
-            marginLeft: 'auto',
-            height: '34px',
-            padding: '0 16px',
-            border: 'none',
-            borderRadius: 'var(--radius)',
-            background: 'rgba(0,168,112,1)',
-            color: '#fff',
-            fontSize: 'var(--text-base)',
-            fontWeight: 'var(--font-weight-semibold)',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            boxShadow: '0 8px 18px rgba(0,168,112,0.22)',
-          }}
-        >
-          AI 自动审核
-        </button>
       </div>
 
       {/* Filter & Search Bar */}
@@ -1399,10 +1486,31 @@ export function ContentReview() {
             </button>
           ))}
         </div>
+
+        <button
+          type="button"
+          onClick={() => setAiReviewOpen(true)}
+          style={{
+            marginLeft: 'auto',
+            height: '34px',
+            padding: '0 16px',
+            border: 'none',
+            borderRadius: 'var(--radius)',
+            background: 'rgba(0,168,112,1)',
+            color: '#fff',
+            fontSize: 'var(--text-base)',
+            fontWeight: 'var(--font-weight-semibold)',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 8px 18px rgba(0,168,112,0.22)',
+          }}
+        >
+          AI 自动审核
+        </button>
       </div>
 
       {/* Submissions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowX: 'auto' }}>
         {filteredSubmissions.length > 0 && (
           <div
             style={{
@@ -1413,26 +1521,31 @@ export function ContentReview() {
               display: 'flex',
               alignItems: 'center',
               gap: '18px',
+              minWidth: 'fit-content',
             }}
           >
             {[
-              { label: '用户', minWidth: '140px' },
-              { label: '内容标题', flex: 1 },
-              { label: '提交时间', minWidth: '150px' },
-              { label: '审核状态', minWidth: '96px' },
-              { label: '平台', minWidth: '72px' },
-              ...(showReviewerColumn ? [{ label: '审核人', minWidth: '180px' }] : []),
-              { label: '操作', minWidth: '250px' },
+              { label: '用户', width: '140px' },
+              { label: '所属任务', width: '160px' },
+              { label: '任务图片', width: '104px' },
+              { label: '内容标题', width: '200px' },
+              { label: '提交时间', width: '150px' },
+              { label: '审核状态', width: '96px' },
+              { label: '所属平台', width: '72px' },
+              ...(showReviewerColumn ? [{ label: '审核人', width: '180px' }] : []),
+              { label: '操作', width: '150px', sticky: true },
             ].map((col) => (
               <div
                 key={col.label}
                 style={{
-                  minWidth: col.minWidth,
-                  flex: col.flex,
+                  width: col.width,
+                  minWidth: col.width,
                   fontSize: '12px',
                   fontWeight: 'var(--font-weight-semibold)',
                   color: 'var(--foreground)',
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  ...(col.sticky ? { position: 'sticky', right: 0, background: 'var(--muted)', zIndex: 2 } : {}),
                 }}
               >
                 {col.label}
@@ -1479,9 +1592,13 @@ export function ContentReview() {
                   background: 'var(--card)',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-lg)',
-                  padding: '20px',
+                  padding: '14px 20px',
                   boxShadow: 'var(--elevation-sm)',
                   transition: 'box-shadow 0.15s',
+                  display: 'flex',
+                  gap: '18px',
+                  alignItems: 'flex-start',
+                  minWidth: 'fit-content',
                 }}
                 onMouseEnter={(e) =>
                   (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)')
@@ -1490,9 +1607,8 @@ export function ContentReview() {
                   (e.currentTarget.style.boxShadow = 'var(--elevation-sm)')
                 }
               >
-                <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start' }}>
                   {/* Avatar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, minWidth: '140px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, width: '140px', minWidth: '140px' }}>
                     <div
                       style={{
                         width: '40px',
@@ -1522,8 +1638,76 @@ export function ContentReview() {
                     </div>
                   </div>
 
+                  {/* Task Name Column */}
+                  <div
+                    style={{
+                      width: '160px',
+                      minWidth: '160px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{ fontSize: '12px', color: 'var(--foreground)', fontWeight: 'var(--font-weight-medium)' }}>
+                      {submission.taskName}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--muted-foreground)' }}>
+                      任务ID：{formatTaskId(submission.taskId)}
+                    </span>
+                    {submission.scene && (() => {
+                      const sceneMeta = SCENE_OPTIONS.find((o) => o.value === submission.scene);
+                      return sceneMeta ? (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            height: '20px',
+                            padding: '0 7px',
+                            borderRadius: '999px',
+                            background: sceneMeta.bg,
+                            color: sceneMeta.color,
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            width: 'fit-content',
+                          }}
+                        >
+                          {sceneMeta.label}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
+
+                  {/* Task Image Column */}
+                  <div
+                    style={{
+                      width: '104px',
+                      minWidth: '104px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {submission.taskImage ? (
+                      <img
+                        src={submission.taskImage}
+                        alt="任务图片"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setPreviewImage({ src: submission.taskImage as string, title: submission.taskName });
+                        }}
+                        style={{ width: 72, height: 72, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)', cursor: 'pointer' }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>—</span>
+                    )}
+                  </div>
+
                   {/* Main Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ width: '200px', minWidth: '200px', flexShrink: 0 }}>
                     {/* Top Row */}
                     <div
                       style={{
@@ -1545,20 +1729,6 @@ export function ContentReview() {
                         >
                           {submission.contentTitle}
                         </div>
-                        <div
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '11px',
-                            background: 'rgba(24,144,255,0.08)',
-                            color: 'var(--accent)',
-                            padding: '2px 8px',
-                            borderRadius: 'var(--radius)',
-                          }}
-                        >
-                          {formatTaskId(submission.taskId)}：{submission.taskName}
-                        </div>
                       </div>
                     </div>
 
@@ -1567,12 +1737,14 @@ export function ContentReview() {
                   {/* Submit Time Column */}
                   <div
                     style={{
+                      width: '150px',
                       minWidth: '150px',
                       display: 'flex',
                       alignItems: 'center',
-                      color: 'var(--muted-foreground)',
+                      color: 'var(--foreground)',
                       fontSize: '12px',
                       flexShrink: 0,
+                      alignSelf: 'center',
                     }}
                   >
                     {submission.submitTime}
@@ -1581,11 +1753,13 @@ export function ContentReview() {
                   {/* Status Column */}
                   <div
                     style={{
+                      width: '96px',
                       minWidth: '96px',
                       display: 'flex',
                       justifyContent: 'flex-start',
                       alignItems: 'center',
                       flexShrink: 0,
+                      alignSelf: 'center',
                     }}
                   >
                     <span
@@ -1618,6 +1792,7 @@ export function ContentReview() {
                   {/* Platform Column */}
                   <div
                     style={{
+                      width: '72px',
                       minWidth: '72px',
                       display: 'flex',
                       flexDirection: 'column',
@@ -1625,7 +1800,7 @@ export function ContentReview() {
                       alignItems: 'flex-start',
                       gap: '6px',
                       flexShrink: 0,
-                      marginLeft: '6px',
+                      alignSelf: 'center',
                     }}
                   >
                     <PlatformBadge platform={submission.platform} size={12} />
@@ -1634,6 +1809,7 @@ export function ContentReview() {
                   {showReviewerColumn && (
                     <div
                       style={{
+                        width: '180px',
                         minWidth: '180px',
                         display: 'flex',
                         flexDirection: 'column',
@@ -1643,6 +1819,7 @@ export function ContentReview() {
                         color: 'var(--muted-foreground)',
                         fontSize: '12px',
                         flexShrink: 0,
+                        alignSelf: 'center',
                       }}
                     >
                       <span style={{ color: 'var(--foreground)' }}>{submission.reviewedBy || '系统审核员'}</span>
@@ -1653,14 +1830,21 @@ export function ContentReview() {
                   {/* Actions Column */}
                   <div
                     style={{
-                      minWidth: '250px',
+                      width: '150px',
+                      minWidth: '150px',
                       display: 'flex',
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: '8px',
                       flexWrap: 'wrap',
                       flexShrink: 0,
-                      marginLeft: '6px',
+                      alignSelf: 'stretch',
+                      position: 'sticky',
+                      right: 0,
+                      background: '#ffffff',
+                      zIndex: 1,
+                      paddingRight: 20,
+                      boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.08)',
                     }}
                   >
                     <a
@@ -1668,22 +1852,19 @@ export function ContentReview() {
                       target="_blank"
                       rel="noopener noreferrer"
                       style={{
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '5px',
-                        padding: '7px 12px',
-                        background: 'var(--muted)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius)',
+                        gap: '4px',
+                        padding: '2px 0',
+                        background: 'none',
+                        border: 'none',
                         textDecoration: 'none',
                         fontSize: '12px',
-                        color: 'var(--foreground)',
+                        color: 'var(--accent)',
                         fontWeight: 'var(--font-weight-medium)',
-                        transition: 'background 0.15s',
+                        cursor: 'pointer',
                       }}
                     >
-                      <ExternalLink size={13} />
                       查看内容
                     </a>
 
@@ -1692,14 +1873,12 @@ export function ContentReview() {
                         type="button"
                         onClick={() => setReasonViewText(submission.rejectReason || '')}
                         style={{
-                          display: 'flex',
+                          display: 'inline-flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '5px',
-                          padding: '7px 12px',
-                          background: 'rgba(255,77,79,0.08)',
-                          border: '1px solid rgba(255,77,79,0.3)',
-                          borderRadius: 'var(--radius)',
+                          gap: '4px',
+                          padding: '2px 0',
+                          background: 'none',
+                          border: 'none',
                           cursor: 'pointer',
                           fontSize: '12px',
                           color: 'var(--destructive)',
@@ -1715,47 +1894,40 @@ export function ContentReview() {
                         <button
                           onClick={() => setApproveTarget(submission.id)}
                           style={{
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '5px',
-                            padding: '7px 12px',
-                            background: 'rgba(82,196,26,1)',
+                            gap: '4px',
+                            padding: '2px 0',
+                            background: 'none',
                             border: 'none',
-                            borderRadius: 'var(--radius)',
                             cursor: 'pointer',
                             fontSize: '12px',
-                            color: 'white',
+                            color: '#52c41a',
                             fontWeight: 'var(--font-weight-medium)',
                           }}
                         >
-                          <Check size={13} strokeWidth={2.5} />
                           通过
                         </button>
                         <button
                           onClick={() => setRejectTarget(submission.id)}
                           style={{
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '5px',
-                            padding: '7px 12px',
-                            background: 'rgba(255,77,79,0.08)',
-                            border: '1px solid rgba(255,77,79,0.3)',
-                            borderRadius: 'var(--radius)',
+                            gap: '4px',
+                            padding: '2px 0',
+                            background: 'none',
+                            border: 'none',
                             cursor: 'pointer',
                             fontSize: '12px',
                             color: 'var(--destructive)',
                             fontWeight: 'var(--font-weight-medium)',
                           }}
                         >
-                          <X size={13} strokeWidth={2.5} />
                           拒绝
                         </button>
                       </>
                     )}
                   </div>
-                </div>
               </div>
             );
           })
@@ -1826,6 +1998,84 @@ export function ContentReview() {
               >
                 下一页
               </button>
+            </div>
+          </div>
+        )}
+
+        {previewImage && (
+          <div
+            onClick={() => setPreviewImage(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 200,
+              background: 'rgba(0,0,0,0.75)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px',
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: 'min(92vw, 880px)',
+                maxHeight: '88vh',
+                borderRadius: '14px',
+                background: 'rgba(15,23,42,0.92)',
+                border: '1px solid rgba(148,163,184,0.28)',
+                boxShadow: '0 28px 64px rgba(0,0,0,0.42)',
+                display: 'grid',
+                gridTemplateRows: 'auto 1fr',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '42px',
+                  padding: '0 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: 'rgba(15,23,42,0.96)',
+                  borderBottom: '1px solid rgba(148,163,184,0.22)',
+                }}
+              >
+                <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>{previewImage.title}</span>
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage(null)}
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(148,163,184,0.36)',
+                    background: 'transparent',
+                    color: '#e2e8f0',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    lineHeight: 1,
+                  }}
+                  aria-label="关闭预览"
+                >
+                  ×
+                </button>
+              </div>
+              <div
+                style={{
+                  padding: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'auto',
+                }}
+              >
+                <img
+                  src={previewImage.src}
+                  alt="任务图片预览"
+                  style={{ maxWidth: '100%', maxHeight: 'calc(88vh - 74px)', borderRadius: 8, objectFit: 'contain' }}
+                />
+              </div>
             </div>
           </div>
         )}

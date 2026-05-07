@@ -4,6 +4,7 @@ import {
   Heart,
   BarChart3,
   Sparkles,
+  Check,
   Plus,
   Search,
 } from 'lucide-react';
@@ -300,7 +301,7 @@ export function TaskList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sceneFilter, setSceneFilter] = useState<'all' | SceneKey>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | Task['status']>('all');
-  const [platformFilter, setPlatformFilter] = useState<string[]>([]);
+  const [platformFilter, setPlatformFilter] = useState<string>('');
   const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
   const [orderEditor, setOrderEditor] = useState<{ taskId: string; value: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -403,8 +404,8 @@ export function TaskList() {
         statusFilter === 'all' || t.status === statusFilter;
       const taskPlatform = normalizePlatform(t.platform);
       const matchesPlatform =
-        platformFilter.length === 0 ||
-        platformFilter.includes(taskPlatform);
+        !platformFilter ||
+        platformFilter === taskPlatform;
       return matchesSearch && matchesScene && matchesStatus && matchesPlatform;
     })
     .sort((a, b) => b.showOrder - a.showOrder);
@@ -437,7 +438,6 @@ export function TaskList() {
                 内容激励计划
               </div>
               <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-                激励用户在小红书、抖音等平台发布内容，获得互动奖励
               </div>
             </div>
           </div>
@@ -728,19 +728,15 @@ export function TaskList() {
                 <span
                   style={{
                     color:
-                      platformFilter.length === 0
+                      !platformFilter
                         ? 'var(--muted-foreground)'
                         : 'var(--foreground)',
                   }}
                 >
-                  {platformFilter.length === 0 ? (
-                    '请选择'
-                  ) : platformFilter.length === 1 ? (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', verticalAlign: 'middle' }}>
-                      <PlatformBadge platform={platformFilter[0]} size={12} />
-                    </span>
+                  {!platformFilter ? (
+                    '全部'
                   ) : (
-                    `已选 ${platformFilter.length} 项`
+                    platformFilter
                   )}
                 </span>
               </span>
@@ -774,41 +770,66 @@ export function TaskList() {
                   left: 0,
                   minWidth: '220px',
                   background: 'var(--card)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)',
-                  boxShadow: 'var(--elevation-md)',
-                  padding: '6px',
-                  zIndex: 20,
+                  border: '1px solid rgba(15,23,42,0.12)',
+                  borderRadius: '20px',
+                  boxShadow: '0 18px 32px rgba(15,23,42,0.16)',
+                  padding: '10px',
+                  zIndex: 30,
                 }}
               >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentPage(1);
+                    setPlatformFilter('');
+                    setIsPlatformDropdownOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 10px',
+                    border: 'none',
+                    borderRadius: '14px',
+                    background: !platformFilter ? 'rgba(77, 147, 235, 0.92)' : 'transparent',
+                    color: !platformFilter ? '#fff' : 'var(--foreground)',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {!platformFilter ? <Check size={18} /> : <span style={{ width: 18 }} />}
+                  全部
+                </button>
                 {PLATFORM_OPTIONS.map((option) => {
-                  const checked = platformFilter.includes(option.value);
+                  const checked = platformFilter === option.value;
                   return (
-                    <label
+                    <button
                       key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage(1);
+                        setPlatformFilter(option.value);
+                        setIsPlatformDropdownOpen(false);
+                      }}
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '6px 8px',
-                        borderRadius: 'var(--radius)',
+                        width: '100%',
+                        marginTop: '4px',
+                        border: 'none',
+                        borderRadius: '14px',
+                        padding: '8px 14px',
+                        background: checked ? 'rgba(77, 147, 235, 0.92)' : 'transparent',
+                        color: checked ? '#fff' : 'var(--foreground)',
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        textAlign: 'left',
                         cursor: 'pointer',
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          setPlatformFilter((current) => {
-                            setCurrentPage(1);
-                            return checked
-                              ? current.filter((value) => value !== option.value)
-                              : [...current, option.value];
-                          })
-                        }
-                      />
-                      <PlatformBadge platform={option.value} size={12} />
-                    </label>
+                      {checked ? '✓ ' : ''}{option.label}
+                    </button>
                   );
                 })}
               </div>
@@ -816,13 +837,13 @@ export function TaskList() {
           </div>
 
           {/* Reset */}
-          {(searchTerm || sceneFilter !== 'all' || statusFilter !== 'all' || platformFilter.length > 0) && (
+          {(searchTerm || sceneFilter !== 'all' || statusFilter !== 'all' || !!platformFilter) && (
             <button
               onClick={() => {
                 setSearchTerm('');
                 setSceneFilter('all');
                 setStatusFilter('all');
-                setPlatformFilter([]);
+                setPlatformFilter('');
                 setCurrentPage(1);
               }}
               style={{
@@ -871,7 +892,7 @@ export function TaskList() {
 
         {/* Table */}
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: '1530px', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', minWidth: '1440px', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--muted)' }}>
                 {[
@@ -906,7 +927,7 @@ export function TaskList() {
                   },
                   { key: 'status', label: '任务状态', minWidth: 140 },
                   { key: 'date', label: '任务时间', minWidth: 170 },
-                  { key: 'actions', label: '操作', minWidth: 340 },
+                  { key: 'actions', label: '操作', minWidth: 250 },
                 ].map((col) => (
                     <th
                       key={col.key}
@@ -1044,7 +1065,7 @@ export function TaskList() {
                   <td
                     style={{
                       padding: '14px 20px',
-                      minWidth: '340px',
+                      minWidth: '250px',
                       whiteSpace: 'nowrap',
                       position: 'sticky',
                       right: 0,
