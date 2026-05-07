@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useUserH5 } from "../state";
 import { Card, Container, SectionTitle } from "../shared";
@@ -13,6 +13,44 @@ function InputField({ label, value, onChange }: { label: string; value: string; 
   );
 }
 
+function ImageUploadBox({
+  label,
+  preview,
+  onChange,
+}: {
+  label: string;
+  preview: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label style={uploadBoxStyle}>
+      {preview ? (
+        <img src={preview} alt={label} style={uploadPreviewStyle} />
+      ) : (
+        <span style={uploadEmptyStyle}>+<br />{label}</span>
+      )}
+      <input
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (!file) return;
+          onChange(URL.createObjectURL(file));
+        }}
+      />
+    </label>
+  );
+}
+
+function FeedbackMessage({ text }: { text: string }) {
+  return (
+    <div style={{ marginTop: 12, padding: 12, borderRadius: 18, background: text.includes("成功") ? "rgba(82,196,26,0.10)" : "rgba(250,173,20,0.10)", color: text.includes("成功") ? "#15803d" : "#b45309", fontSize: 13, lineHeight: 1.6 }}>
+      {text}
+    </div>
+  );
+}
+
 export function SubmitPage() {
   const { tasks, accounts, submitContent } = useUserH5();
   const navigate = useNavigate();
@@ -22,6 +60,10 @@ export function SubmitPage() {
   const [contentUrl, setContentUrl] = useState("https://www.xiaohongshu.com/explore/demo-submit");
   const [contentPreview, setContentPreview] = useState("春季换季期分享一篇真实种草笔记，突出使用感受与推荐理由。");
   const [feedback, setFeedback] = useState("");
+  const [followProofs, setFollowProofs] = useState<Record<number, string>>({});
+  const [followProofNote, setFollowProofNote] = useState("");
+  const [engagementProof, setEngagementProof] = useState("");
+  const [engagementProofNote, setEngagementProofNote] = useState("");
 
   if (!task) {
     return (
@@ -37,6 +79,14 @@ export function SubmitPage() {
 
   const platform = task.platform[0] ?? "小红书";
   const account = accounts.find((item) => item.platform === platform);
+  const followTargets = task.followTargets ?? [];
+  const engagementPlatform = task.engagementPlatform ?? task.platform[0] ?? "小红书";
+  const engagementAccount = accounts.find((item) => item.platform === engagementPlatform);
+  const followSubmitPlatform =
+    followTargets.find((target) => accounts.some((item) => item.platform === target.platform))?.platform ??
+    followTargets[0]?.platform ??
+    platform;
+  const followAccount = accounts.find((item) => item.platform === followSubmitPlatform);
   const submissionRules = [
     "内容链接必须公开可访问",
     "同一链接不能重复提交",
@@ -62,6 +112,158 @@ export function SubmitPage() {
     setFeedback(result.message);
     if (result.ok) navigate("/submissions");
   };
+
+  const handleSubmitFollow = () => {
+    const missingProof = followTargets.some((_, index) => !followProofs[index]);
+    if (missingProof) {
+      setFeedback("请为每个需关注账号上传一张关注截图。");
+      return;
+    }
+    if (!followAccount) {
+      setFeedback(`请先完成 ${followSubmitPlatform} 账号认证，再提交关注凭证。`);
+      return;
+    }
+
+    const result = submitContent({
+      taskId: task.id,
+      platform: followSubmitPlatform,
+      title: `${task.name}｜关注凭证`,
+      contentUrl: `https://proof.local/follow/${task.id}/${Date.now()}`,
+      contentPreview: followProofNote || task.proofDescription || "已按要求关注指定账号并提交截图凭证。",
+      publishTime: new Date().toLocaleString("zh-CN", { hour12: false }),
+      accountHandle: followAccount.accountHandle,
+    });
+    setFeedback(result.message);
+    if (result.ok) navigate("/submissions");
+  };
+
+  const handleSubmitEngagement = () => {
+    if (!engagementProof) {
+      setFeedback("请上传一张互动完成截图。");
+      return;
+    }
+    if (!engagementAccount) {
+      setFeedback(`请先完成 ${engagementPlatform} 账号认证，再提交互动凭证。`);
+      return;
+    }
+
+    const result = submitContent({
+      taskId: task.id,
+      platform: engagementPlatform,
+      title: `${task.name}｜互动凭证`,
+      contentUrl: `https://proof.local/engagement/${task.id}/${Date.now()}`,
+      contentPreview: engagementProofNote || task.engagementProofDescription || "已按要求完成互动并提交截图凭证。",
+      publishTime: new Date().toLocaleString("zh-CN", { hour12: false }),
+      accountHandle: engagementAccount.accountHandle,
+    });
+    setFeedback(result.message);
+    if (result.ok) navigate("/submissions");
+  };
+
+  if (task.scene === "follow") {
+    return (
+      <Container>
+        <div style={{ display: "grid", gap: 12 }}>
+          <Card style={{ padding: 16 }}>
+            <SectionTitle title="账号加粉凭证" />
+            <div style={sceneSubmitSourceStyle}>
+              <img src={task.image} alt={task.name} style={sceneSubmitThumbStyle} />
+              <div style={{ minWidth: 0 }}>
+                <div style={heroTaskTitleStyle}>{task.name}</div>
+                <div style={sceneSubmitDescStyle}>关注全部指定账号后，逐个上传截图凭证。</div>
+              </div>
+            </div>
+          </Card>
+
+          <Card style={{ padding: 16 }}>
+            <SectionTitle title="关注账号" />
+            <div style={{ display: "grid", gap: 12 }}>
+              {followTargets.map((target, index) => (
+                <div key={`${target.platform}-${target.account}-${index}`} style={proofTargetStyle}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      <PlatformBadge platform={target.platform} size={13} style={{ width: "fit-content" }} />
+                      <div style={proofTargetTitleStyle}>{target.account}</div>
+                    </div>
+                    {target.sampleImage && <img src={target.sampleImage} alt="示例图" style={sampleMiniStyle} />}
+                  </div>
+                  <ImageUploadBox
+                    label="上传关注截图"
+                    preview={followProofs[index] ?? ""}
+                    onChange={(value) => setFollowProofs((prev) => ({ ...prev, [index]: value }))}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {feedback && <FeedbackMessage text={feedback} />}
+        </div>
+
+        <div style={fixedSubmitBarWrapStyle}>
+          <button onClick={handleSubmitFollow} style={fixedSubmitButtonStyle}>提交审核</button>
+        </div>
+      </Container>
+    );
+  }
+
+  if (task.scene === "engagement") {
+    const actions = task.engagementActions ?? [];
+    const hasComment = actions.includes("评论");
+
+    return (
+      <Container>
+        <div style={{ display: "grid", gap: 12 }}>
+          <Card style={{ padding: 16 }}>
+            <SectionTitle title="内容互动凭证" />
+            <div style={sceneSubmitSourceStyle}>
+              <img src={task.image} alt={task.name} style={sceneSubmitThumbStyle} />
+              <div style={{ minWidth: 0 }}>
+                <div style={heroTaskTitleStyle}>{task.name}</div>
+                <div style={sceneSubmitDescStyle}>完成互动动作后，上传截图并补充说明。</div>
+              </div>
+            </div>
+          </Card>
+
+          <Card style={{ padding: 16 }}>
+            <SectionTitle title="互动要求" />
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={compactInfoStyle}>
+                <span>互动平台</span>
+                <PlatformBadge platform={engagementPlatform} size={13} />
+              </div>
+              <div style={compactInfoStyle}>
+                <span>内容链接</span>
+                <span style={{ color: "#2474ff", overflowWrap: "anywhere", textAlign: "right" }}>{task.engagementContentUrl}</span>
+              </div>
+              <div style={actionRowStyle}>
+                {actions.map((action) => <span key={action} style={actionTagStyle}>{action}</span>)}
+              </div>
+              {hasComment && task.commentKeyword && (
+                <div style={compactInfoStyle}>
+                  <span>评论关键词</span>
+                  <strong>{task.commentKeyword}</strong>
+                </div>
+              )}
+              {task.engagementSampleImage && <img src={task.engagementSampleImage} alt="内容示例图" style={engagementSampleStyle} />}
+            </div>
+          </Card>
+
+          <Card style={{ padding: 16 }}>
+            <SectionTitle title="提交凭证" />
+            <div style={proofHintStyle}>{task.engagementProofDescription}</div>
+            <ImageUploadBox label="上传互动截图" preview={engagementProof} onChange={setEngagementProof} />
+            <InputField label="引导文案" value={engagementProofNote} onChange={setEngagementProofNote} />
+            {feedback && <FeedbackMessage text={feedback} />}
+          </Card>
+        </div>
+
+        <div style={fixedSubmitBarWrapStyle}>
+          <button onClick={handleSubmitEngagement} style={fixedSubmitButtonStyle}>提交审核</button>
+        </div>
+      </Container>
+    );
+  }
 
   return (
     <Container>
@@ -127,6 +329,117 @@ export function SubmitPage() {
   );
 }
 
+const uploadBoxStyle: React.CSSProperties = {
+  width: 118,
+  height: 118,
+  borderRadius: 22,
+  border: "1.5px dashed rgba(148,163,184,0.75)",
+  background: "rgba(248,250,252,0.92)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden",
+  cursor: "pointer",
+  marginTop: 10,
+};
+const uploadPreviewStyle: React.CSSProperties = {
+  width: "82%",
+  height: "82%",
+  objectFit: "contain",
+  borderRadius: 16,
+  display: "block",
+};
+const uploadEmptyStyle: React.CSSProperties = {
+  color: "#64748b",
+  fontSize: 13,
+  fontWeight: 800,
+  lineHeight: 1.7,
+  textAlign: "center",
+};
+const sceneSubmitSourceStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "86px 1fr",
+  gap: 12,
+  alignItems: "center",
+  padding: 12,
+  borderRadius: 22,
+  background: "linear-gradient(135deg, rgba(239,246,255,0.96), rgba(255,255,255,0.98))",
+  border: "1px solid rgba(226,232,240,0.88)",
+};
+const sceneSubmitThumbStyle: React.CSSProperties = {
+  width: 86,
+  height: 72,
+  borderRadius: 18,
+  objectFit: "cover",
+  display: "block",
+};
+const sceneSubmitDescStyle: React.CSSProperties = {
+  marginTop: 8,
+  fontSize: 12,
+  lineHeight: 1.6,
+  color: "#64748b",
+  fontWeight: 700,
+};
+const proofTargetStyle: React.CSSProperties = {
+  padding: 12,
+  borderRadius: 22,
+  background: "rgba(248,250,252,0.96)",
+  border: "1px solid rgba(226,232,240,0.88)",
+};
+const proofTargetTitleStyle: React.CSSProperties = {
+  fontSize: 15,
+  color: "#0f172a",
+  fontWeight: 900,
+};
+const sampleMiniStyle: React.CSSProperties = {
+  width: 58,
+  height: 58,
+  borderRadius: 16,
+  objectFit: "cover",
+  border: "1px solid rgba(226,232,240,0.9)",
+};
+const proofHintStyle: React.CSSProperties = {
+  marginBottom: 12,
+  padding: 12,
+  borderRadius: 18,
+  background: "rgba(239,246,255,0.9)",
+  color: "#475569",
+  fontSize: 13,
+  lineHeight: 1.7,
+  fontWeight: 700,
+};
+const compactInfoStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  padding: "10px 12px",
+  borderRadius: 16,
+  background: "rgba(248,250,252,0.96)",
+  color: "#64748b",
+  fontSize: 13,
+  fontWeight: 800,
+};
+const actionRowStyle: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+};
+const actionTagStyle: React.CSSProperties = {
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "rgba(36,116,255,0.10)",
+  color: "#2474ff",
+  fontSize: 13,
+  fontWeight: 900,
+};
+const engagementSampleStyle: React.CSSProperties = {
+  width: 118,
+  height: 118,
+  borderRadius: 22,
+  objectFit: "cover",
+  border: "1px solid rgba(226,232,240,0.9)",
+};
 const inputStyle: React.CSSProperties = { width: "100%", height: 44, borderRadius: 16, border: "1px solid rgba(203,213,225,0.9)", padding: "0 14px", outline: "none", background: "#fff" };
 const primaryButtonStyle: React.CSSProperties = {
   height: 54,

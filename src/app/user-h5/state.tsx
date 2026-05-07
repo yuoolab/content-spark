@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useState } from "react";
 
-export type Platform = "小红书" | "抖音" | "哔哩哔哩" | "微博";
+export type Platform = "小红书" | "抖音" | "快手" | "视频号" | "哔哩哔哩" | "微博";
+export type TaskScene = "follow" | "engagement" | "seeding" | "engagement_reward";
 export type TaskStatus = "进行中" | "未开始" | "已结束";
 export type SubmissionStatus = "待审核" | "已通过" | "已拒绝";
 export type RewardStatus = "待到账" | "已到账" | "已失效";
@@ -60,9 +61,17 @@ export interface FixedRewardSpec {
 }
 
 export type TaskRewardSpec = BaseRewardSpec | RankingRewardSpec | FixedRewardSpec;
+export type EngagementAction = "点赞" | "评论" | "收藏";
+
+export interface FollowTarget {
+  platform: Platform;
+  account: string;
+  sampleImage?: string;
+}
 
 export interface Task {
   id: string;
+  scene?: TaskScene;
   name: string;
   platform: Platform[];
   status: TaskStatus;
@@ -80,6 +89,15 @@ export interface Task {
   contentType: "不限" | "图文" | "视频";
   description: string;
   rewardSpecs: TaskRewardSpec[];
+  followTargets?: FollowTarget[];
+  followRewardMode?: "all_accounts" | "per_account";
+  proofDescription?: string;
+  engagementPlatform?: Platform;
+  engagementContentUrl?: string;
+  engagementActions?: EngagementAction[];
+  commentKeyword?: string;
+  engagementSampleImage?: string;
+  engagementProofDescription?: string;
 }
 
 export interface AccountBinding {
@@ -179,7 +197,107 @@ const nowText = () => new Date().toLocaleString("zh-CN", { hour12: false });
 
 const initialTasks: Task[] = [
   {
+    id: "task-follow-1",
+    scene: "follow",
+    name: "官方账号加粉任务",
+    platform: ["小红书", "抖音"],
+    status: "进行中",
+    image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=900&q=80",
+    participants: 318,
+    submissions: 506,
+    baseReward: 80,
+    tierReward: "关注全部账号后获得 80 星云币",
+    startDate: "2026-04-18",
+    endDate: "2026-05-18",
+    hashtags: [],
+    keywords: [],
+    minFollowers: 0,
+    maxPerUser: 2,
+    contentType: "不限",
+    description: "按要求关注指定官方账号，提交清晰截图后获得奖励。",
+    followTargets: [
+      {
+        platform: "小红书",
+        account: "品牌官方小红书",
+        sampleImage: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        platform: "抖音",
+        account: "品牌官方抖音号",
+        sampleImage: "https://images.unsplash.com/photo-1611605698335-8b1569810432?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        platform: "快手",
+        account: "品牌福利快手站",
+        sampleImage: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        platform: "视频号",
+        account: "品牌官方视频号",
+        sampleImage: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=600&q=80",
+      },
+      {
+        platform: "小红书",
+        account: "品牌新品情报局",
+        sampleImage: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=600&q=80",
+      },
+    ],
+    followRewardMode: "all_accounts",
+    proofDescription: "请上传关注完成后的截图，截图需同时露出账号主页名称和「已关注」状态，画面清晰更容易一次通过。",
+    rewardSpecs: [
+      {
+        id: "task-follow-1-base",
+        kind: "base",
+        title: "关注全部账号奖励",
+        rewardType: "points",
+        amount: 80,
+        releaseMode: "after_review",
+        releaseDays: 2,
+        note: "关注全部指定账号并审核通过后发放奖励。",
+      },
+    ],
+  },
+  {
+    id: "task-engagement-1",
+    scene: "engagement",
+    name: "重点内容互动助推",
+    platform: ["小红书"],
+    status: "进行中",
+    image: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=900&q=80",
+    participants: 426,
+    submissions: 689,
+    baseReward: 60,
+    tierReward: "完成点赞、收藏、评论后获得 60 星云币",
+    startDate: "2026-04-20",
+    endDate: "2026-05-20",
+    hashtags: [],
+    keywords: ["已种草"],
+    minFollowers: 0,
+    maxPerUser: 3,
+    contentType: "不限",
+    description: "前往指定内容完成互动动作，提交截图和说明即可参与审核。",
+    engagementPlatform: "小红书",
+    engagementContentUrl: "https://www.xiaohongshu.com/explore/engagement-demo",
+    engagementActions: ["点赞", "收藏", "评论"],
+    commentKeyword: "已种草，想试试",
+    engagementSampleImage: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80",
+    engagementProofDescription: "请上传互动完成后的截图，截图需包含内容标题、点赞收藏状态、评论内容和当前账号信息。",
+    rewardSpecs: [
+      {
+        id: "task-engagement-1-base",
+        kind: "base",
+        title: "完成互动奖励",
+        rewardType: "cash",
+        amount: 6,
+        releaseMode: "after_review",
+        releaseDays: 2,
+        note: "按要求完成全部互动动作并审核通过后发放。",
+      },
+    ],
+  },
+  {
     id: "task-1",
+    scene: "seeding",
     name: "春季新品种草计划",
     platform: ["小红书", "抖音"],
     status: "进行中",
@@ -226,6 +344,7 @@ const initialTasks: Task[] = [
   },
   {
     id: "task-2",
+    scene: "seeding",
     name: "会员日专属福利",
     platform: ["小红书"],
     status: "未开始",
@@ -272,6 +391,7 @@ const initialTasks: Task[] = [
   },
   {
     id: "task-3",
+    scene: "engagement_reward",
     name: "产品体验官招募",
     platform: ["抖音"],
     status: "已结束",
@@ -317,6 +437,7 @@ const initialTasks: Task[] = [
   },
   {
     id: "task-4",
+    scene: "engagement_reward",
     name: "夏日清单分享计划",
     platform: ["小红书", "哔哩哔哩"],
     status: "进行中",
@@ -363,6 +484,7 @@ const initialTasks: Task[] = [
   },
   {
     id: "task-5",
+    scene: "seeding",
     name: "节日礼赠种草活动",
     platform: ["抖音"],
     status: "未开始",
@@ -408,6 +530,7 @@ const initialTasks: Task[] = [
   },
   {
     id: "task-6",
+    scene: "engagement_reward",
     name: "会员权益体验官",
     platform: ["小红书", "抖音"],
     status: "已结束",

@@ -462,12 +462,12 @@ export function PageAnnotations({ scope = "default" }: { scope?: "h5" | "backend
   const location = useLocation();
   const annotation = useMemo(() => findAnnotation(location.pathname), [location.pathname]);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const [closed, setClosed] = useState(false);
+  const [closed, setClosed] = useState(true);
   const [minimized, setMinimized] = useState(false);
   const [position, setPosition] = useState(() => ({ x: 24, y: 96 }));
 
   useEffect(() => {
-    setClosed(false);
+    setClosed(true);
     setMinimized(false);
     setPosition(getInitialPosition(scope));
   }, [annotation?.id, scope]);
@@ -547,7 +547,7 @@ export function PageAnnotations({ scope = "default" }: { scope?: "h5" | "backend
       document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", onMouseUp);
     };
-  }, [annotation?.id]);
+  }, [annotation?.id, closed, minimized]);
 
   if (!annotation) return null;
 

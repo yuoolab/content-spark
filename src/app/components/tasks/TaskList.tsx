@@ -1,14 +1,21 @@
 import { Link, useNavigate } from 'react-router';
 import {
+  AtSign,
+  Heart,
+  BarChart3,
+  Sparkles,
   Plus,
   Search,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import type { ElementType } from 'react';
+import { toast } from 'sonner';
 import { PlatformBadge } from '../platform/PlatformBadge';
 
 interface Task {
   id: string;
   name: string;
+  scene: SceneKey;
   platform: string;
   status: 'upcoming' | 'active' | 'expired' | 'inactive';
   showEnabled: boolean;
@@ -19,6 +26,8 @@ interface Task {
   startDate: string;
   endDate: string;
 }
+
+type SceneKey = 'follow' | 'engagement' | 'seeding' | 'engagement_reward';
 
 const PLATFORM_COLOR: Record<string, { bg: string; color: string }> = {
   小红书: { bg: 'rgba(255, 56, 92, 0.08)', color: '#FF385C' },
@@ -31,6 +40,21 @@ const PLATFORM_OPTIONS = [
   { value: '抖音', label: '抖音' },
   { value: '哔哩哔哩', label: '哔哩哔哩' },
 ] as const;
+
+const SCENE_OPTIONS: Array<{
+  value: SceneKey;
+  label: string;
+  desc: string;
+  playbook: string;
+  icon: ElementType;
+  color: string;
+  bg: string;
+}> = [
+  { value: 'follow', label: '账号加粉', desc: '引导关注官方社媒账号，适合拉新关注、账号矩阵导流等场景。', playbook: '引导关注官方社媒账号，适合拉新关注、账号矩阵导流等场景', icon: AtSign, color: '#0f766e', bg: '#ecfdf5' },
+  { value: 'engagement', label: '内容互动', desc: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推。', playbook: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推', icon: Heart, color: '#c2410c', bg: '#fff7ed' },
+  { value: 'seeding', label: '内容种草', desc: '发布原创内容并回传链接，适合征集原创笔记、短视频和测评内容。', playbook: '发布原创内容并回传链接，适合征集原创笔记、短视频和晒单内容', icon: Sparkles, color: '#1d4ed8', bg: '#eff6ff' },
+  { value: 'engagement_reward', label: '效果种草', desc: '发布种草内容并达到指定互动量，适合按效果付费、筛选优质内容。', playbook: '发布种草内容并达到指定互动量得奖励，适用优质内容筛选、KOC潜力挖掘等场景', icon: BarChart3, color: '#7c3aed', bg: '#f5f3ff' },
+];
 
 function normalizePlatform(platform: string) {
   return platform === '哔哩哔哩' ? '哔哩哔哩' : platform;
@@ -106,6 +130,7 @@ export function TaskList() {
     {
       id: '1',
       name: '春季新品种草计划',
+      scene: 'seeding',
       platform: '小红书',
       status: 'active',
       showEnabled: true,
@@ -119,6 +144,7 @@ export function TaskList() {
     {
       id: '2',
       name: '会员日专属福利',
+      scene: 'follow',
       platform: '小红书',
       status: 'upcoming',
       showEnabled: true,
@@ -132,6 +158,7 @@ export function TaskList() {
     {
       id: '3',
       name: '产品体验官招募',
+      scene: 'seeding',
       platform: '抖音',
       status: 'inactive',
       showEnabled: false,
@@ -145,6 +172,7 @@ export function TaskList() {
     {
       id: '4',
       name: '哔哩哔哩开箱挑战赛',
+      scene: 'engagement',
       platform: '哔哩哔哩',
       status: 'expired',
       showEnabled: true,
@@ -158,6 +186,7 @@ export function TaskList() {
     {
       id: '5',
       name: '五一出游穿搭征集',
+      scene: 'seeding',
       platform: '小红书',
       status: 'active',
       showEnabled: true,
@@ -171,6 +200,7 @@ export function TaskList() {
     {
       id: '6',
       name: '母亲节好物推荐',
+      scene: 'engagement_reward',
       platform: '抖音',
       status: 'upcoming',
       showEnabled: true,
@@ -184,6 +214,7 @@ export function TaskList() {
     {
       id: '7',
       name: '春夏轻薄底妆挑战',
+      scene: 'engagement',
       platform: '抖音',
       status: 'active',
       showEnabled: true,
@@ -197,6 +228,7 @@ export function TaskList() {
     {
       id: '8',
       name: '新品成分科普周',
+      scene: 'seeding',
       platform: '哔哩哔哩',
       status: 'inactive',
       showEnabled: false,
@@ -210,6 +242,7 @@ export function TaskList() {
     {
       id: '9',
       name: '618预热清单投稿',
+      scene: 'engagement_reward',
       platform: '小红书',
       status: 'upcoming',
       showEnabled: true,
@@ -223,6 +256,7 @@ export function TaskList() {
     {
       id: '10',
       name: '敏感肌修护实测',
+      scene: 'seeding',
       platform: '小红书',
       status: 'active',
       showEnabled: true,
@@ -236,6 +270,7 @@ export function TaskList() {
     {
       id: '11',
       name: '晚间护肤打卡计划',
+      scene: 'follow',
       platform: '抖音',
       status: 'expired',
       showEnabled: true,
@@ -249,6 +284,7 @@ export function TaskList() {
     {
       id: '12',
       name: '学生党平价好物推荐',
+      scene: 'engagement',
       platform: '小红书',
       status: 'active',
       showEnabled: true,
@@ -262,6 +298,7 @@ export function TaskList() {
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [sceneFilter, setSceneFilter] = useState<'all' | SceneKey>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | Task['status']>('all');
   const [platformFilter, setPlatformFilter] = useState<string[]>([]);
   const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
@@ -309,6 +346,7 @@ export function TaskList() {
       showOrder: task.showOrder - 1,
     };
     setTasks((current) => [...current, newTask]);
+    toast.success('复制成功');
   };
 
   const toggleTaskShowEnabled = (id: string) => {
@@ -360,20 +398,20 @@ export function TaskList() {
       const matchesSearch =
         t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         formatTaskId(t.id).includes(searchTerm.replace(/\D/g, ''));
+      const matchesScene = sceneFilter === 'all' || t.scene === sceneFilter;
       const matchesStatus =
         statusFilter === 'all' || t.status === statusFilter;
       const taskPlatform = normalizePlatform(t.platform);
       const matchesPlatform =
         platformFilter.length === 0 ||
         platformFilter.includes(taskPlatform);
-      return matchesSearch && matchesStatus && matchesPlatform;
+      return matchesSearch && matchesScene && matchesStatus && matchesPlatform;
     })
     .sort((a, b) => b.showOrder - a.showOrder);
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
   const pagedTasks = filteredTasks.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
-
   return (
     <div style={{ padding: '24px' }}>
       {/* Table Card */}
@@ -386,6 +424,84 @@ export function TaskList() {
           overflow: 'hidden',
         }}
       >
+        <div
+          style={{
+            padding: '16px 18px',
+            borderBottom: '1px solid var(--border)',
+            background: 'linear-gradient(135deg, #ffffff 0%, #f7f9fc 64%, #eef4f7 100%)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '12px' }}>
+            <div>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--foreground)', lineHeight: 1.3 }}>
+                内容激励计划
+              </div>
+              <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--muted-foreground)' }}>
+                激励用户在小红书、抖音等平台发布内容，获得互动奖励
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px' }}>
+            {SCENE_OPTIONS.map((scene) => {
+              const Icon = scene.icon;
+              return (
+                <div
+                  key={scene.value}
+                  style={{
+                    border: `1px solid var(--border)`,
+                    borderRadius: '8px',
+                    background: '#fff',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                      padding: '11px 12px 10px',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '7px',
+                        background: scene.bg,
+                        color: scene.color,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Icon size={18} />
+                    </span>
+                    <span style={{ minWidth: 0, flex: 1 }}>
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <span style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: 'var(--foreground)' }}>
+                          {scene.label}
+                        </span>
+                        <Link
+                          to={`/backend/tasks/create?scene=${scene.value}`}
+                          style={{ color: 'rgba(36,116,255,1)', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap', textDecoration: 'none' }}
+                        >
+                          去创建
+                        </Link>
+                      </span>
+                      <span style={{ display: 'block', marginTop: '3px', fontSize: '12px', color: 'var(--foreground)' }}>
+                        {scene.playbook}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Filter Bar */}
         <div
           style={{
@@ -432,6 +548,80 @@ export function TaskList() {
                 outline: 'none',
               }}
             />
+          </div>
+
+          {/* Status Filter */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <select
+              value={sceneFilter}
+              onChange={(e) => {
+                setSceneFilter(e.target.value as 'all' | SceneKey);
+                setCurrentPage(1);
+              }}
+              style={{
+                appearance: 'none',
+                paddingLeft: '10px',
+                paddingRight: '36px',
+                paddingTop: '8px',
+                paddingBottom: '8px',
+                fontSize: 'var(--text-base)',
+                background: 'var(--card)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius)',
+                color: 'transparent',
+                outline: 'none',
+                cursor: 'pointer',
+                minWidth: '200px',
+              }}
+            >
+              <option value="all">全部</option>
+              {SCENE_OPTIONS.map((scene) => (
+                <option key={scene.value} value={scene.value}>
+                  {scene.label}
+                </option>
+              ))}
+            </select>
+            <span
+              style={{
+                position: 'absolute',
+                left: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: 'var(--text-base)',
+                color: 'var(--card-foreground)',
+                pointerEvents: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              任务场景：
+              <span style={{ color: sceneFilter === 'all' ? 'var(--muted-foreground)' : 'var(--foreground)' }}>
+                {sceneFilter === 'all'
+                  ? '请选择'
+                  : (SCENE_OPTIONS.find((item) => item.value === sceneFilter)?.label ?? '请选择')}
+              </span>
+            </span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+                color: 'var(--muted-foreground)',
+              }}
+            >
+              <path
+                d="M2.5 4.5L6 8L9.5 4.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
 
           {/* Status Filter */}
@@ -626,10 +816,11 @@ export function TaskList() {
           </div>
 
           {/* Reset */}
-          {(searchTerm || statusFilter !== 'all' || platformFilter.length > 0) && (
+          {(searchTerm || sceneFilter !== 'all' || statusFilter !== 'all' || platformFilter.length > 0) && (
             <button
               onClick={() => {
                 setSearchTerm('');
+                setSceneFilter('all');
                 setStatusFilter('all');
                 setPlatformFilter([]);
                 setCurrentPage(1);
@@ -685,8 +876,8 @@ export function TaskList() {
               <tr style={{ background: 'var(--muted)' }}>
                 {[
                   { key: 'taskName', label: '任务名称', minWidth: 280 },
+                  { key: 'scene', label: '任务场景', minWidth: 140 },
                   { key: 'participants', label: '参与人数', minWidth: 110 },
-                  { key: 'submissions', label: '内容提交数', minWidth: 120 },
                   {
                     key: 'sync',
                     minWidth: 180,
@@ -713,7 +904,6 @@ export function TaskList() {
                       </span>
                     ),
                   },
-                  { key: 'platform', label: '参与平台', minWidth: 140 },
                   { key: 'status', label: '任务状态', minWidth: 140 },
                   { key: 'date', label: '任务时间', minWidth: 170 },
                   { key: 'actions', label: '操作', minWidth: 340 },
@@ -786,15 +976,13 @@ export function TaskList() {
                     </div>
                   </td>
 
+                  <td style={{ padding: '14px 20px', minWidth: '140px' }}>
+                    <SceneBadge scene={task.scene} />
+                  </td>
+
                   <td style={{ padding: '14px 20px', minWidth: '110px' }}>
                     <span style={{ fontSize: 'var(--text-base)', color: 'var(--foreground)', fontWeight: 'var(--font-weight-semibold)' }}>
                       {task.participants.toLocaleString()}
-                    </span>
-                  </td>
-
-                  <td style={{ padding: '14px 20px', minWidth: '120px' }}>
-                    <span style={{ fontSize: 'var(--text-base)', color: 'var(--foreground)', fontWeight: 'var(--font-weight-semibold)' }}>
-                      {task.submissions.toLocaleString()}
                     </span>
                   </td>
 
@@ -831,11 +1019,6 @@ export function TaskList() {
                         </button>
                       )}
                     </div>
-                  </td>
-
-                  {/* Platform */}
-                  <td style={{ padding: '14px 20px', minWidth: '140px' }}>
-                    <PlatformBadge platform={task.platform} size={13} />
                   </td>
 
                   {/* Status */}
@@ -1062,6 +1245,31 @@ export function TaskList() {
         </div>
       )}
     </div>
+  );
+}
+
+function SceneBadge({ scene }: { scene: SceneKey }) {
+  const meta = SCENE_OPTIONS.find((item) => item.value === scene) ?? SCENE_OPTIONS[0];
+  const Icon = meta.icon;
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        height: '26px',
+        padding: '0 9px',
+        borderRadius: '999px',
+        background: meta.bg,
+        color: meta.color,
+        fontSize: '12px',
+        fontWeight: 700,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <Icon size={13} />
+      {meta.label}
+    </span>
   );
 }
 

@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 
-export type PlatformName = "小红书" | "抖音" | "哔哩哔哩" | "哔哩哔哩" | "微博";
+export type PlatformName = "小红书" | "抖音" | "快手" | "视频号" | "哔哩哔哩" | "微博";
 
-const PLATFORM_META: Record<"小红书" | "抖音" | "哔哩哔哩" | "微博", {
+const PLATFORM_META: Record<PlatformName, {
   label: string;
   color: string;
   bg: string;
@@ -20,6 +20,18 @@ const PLATFORM_META: Record<"小红书" | "抖音" | "哔哩哔哩" | "微博", 
     bg: "rgba(17,17,17,0.08)",
     border: "rgba(17,17,17,0.12)",
   },
+  快手: {
+    label: "快手",
+    color: "#FF6A00",
+    bg: "rgba(255,106,0,0.10)",
+    border: "rgba(255,106,0,0.18)",
+  },
+  视频号: {
+    label: "视频号",
+    color: "#22c55e",
+    bg: "rgba(34,197,94,0.10)",
+    border: "rgba(34,197,94,0.18)",
+  },
   哔哩哔哩: {
     label: "哔哩哔哩",
     color: "#FF5A8F",
@@ -34,9 +46,11 @@ const PLATFORM_META: Record<"小红书" | "抖音" | "哔哩哔哩" | "微博", 
   },
 };
 
-export function normalizePlatformName(platform: string): "小红书" | "抖音" | "哔哩哔哩" | "微博" {
+export function normalizePlatformName(platform: string): PlatformName {
   if (platform === "哔哩哔哩") return "哔哩哔哩";
   if (platform === "哔哩哔哩") return "哔哩哔哩";
+  if (platform === "快手") return "快手";
+  if (platform === "视频号") return "视频号";
   if (platform === "抖音") return "抖音";
   if (platform === "微博") return "微博";
   return "小红书";
@@ -120,6 +134,35 @@ export function PlatformLogo({
         >
           微博
         </text>
+      </svg>
+    );
+  }
+
+  if (key === "快手") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <circle cx="24" cy="24" r="24" fill="#FF6A00" />
+        <text
+          x="24"
+          y="29"
+          textAnchor="middle"
+          fill="white"
+          fontSize="12"
+          fontWeight="800"
+          fontFamily="'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif"
+          letterSpacing="-0.4"
+        >
+          快手
+        </text>
+      </svg>
+    );
+  }
+
+  if (key === "视频号") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <circle cx="24" cy="24" r="24" fill="#22C55E" />
+        <path d="M17 15.5L34 24L17 32.5V15.5Z" fill="white" />
       </svg>
     );
   }

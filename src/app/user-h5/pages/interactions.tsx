@@ -1,6 +1,7 @@
 import { BadgeCheck, CircleCheckBig, Clock3, Copy, Gift, ShieldCheck } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useUserH5 } from "../state";
 import { Card, Container, Pill, SectionTitle } from "../shared";
 
@@ -237,8 +238,10 @@ export function SubmissionDetailPage() {
     if (!item) return;
     try {
       await navigator.clipboard.writeText(item.contentUrl);
+      toast.success("复制成功");
     } catch {
       window.prompt("复制链接", item.contentUrl);
+      toast.error("复制失败，请稍后重试");
     }
   };
   const giftRewards = useMemo(
