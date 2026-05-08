@@ -291,7 +291,7 @@ const initialTasks: Task[] = [
         amount: 6,
         releaseMode: "after_review",
         releaseDays: 2,
-        note: "按要求完成全部互动动作并审核通过后发放。",
+        note: "按要求完成全部互动动作，截图审核通过后发放奖励。",
       },
     ],
   },
@@ -842,7 +842,8 @@ export function UserH5Provider({ children }: { children: React.ReactNode }) {
     }
 
     const linkedAccount = accounts.find((item) => item.platform === payload.platform);
-    if (!linkedAccount) {
+    const requiresAuth = task.scene !== "follow" && task.scene !== "engagement";
+    if (requiresAuth && !linkedAccount) {
       return { ok: false, message: "请先完成对应平台账号认证" };
     }
 
@@ -874,7 +875,7 @@ export function UserH5Provider({ children }: { children: React.ReactNode }) {
       likes: Math.floor(Math.random() * 700) + 20,
       comments: Math.floor(Math.random() * 120) + 5,
       collections: Math.floor(Math.random() * 100) + 3,
-      accountHandle: payload.accountHandle,
+      accountHandle: payload.accountHandle || linkedAccount?.accountHandle || "系统提交",
       rewardStatus: "待到账",
     };
 

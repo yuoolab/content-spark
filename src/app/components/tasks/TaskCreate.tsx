@@ -755,7 +755,7 @@ export function TaskCreate() {
                         </label>}
                       </div>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 3 张。
+                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 1 张。
                       </span>
                     </div>
                   </Field>

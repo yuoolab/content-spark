@@ -80,7 +80,7 @@ export function SubmissionsPage() {
                       }}
                     >
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 700, letterSpacing: "0.06em" }}>关联任务</div>
+                        <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400, letterSpacing: "0.06em" }}>关联任务</div>
                         <div style={{ marginTop: 4, fontSize: 13, color: "#334155", fontWeight: 700, lineHeight: 1.45 }}>
                           {taskNameMap.get(item.taskId) ?? "任务已下线"}
                         </div>
@@ -128,8 +128,7 @@ export function SubmissionsPage() {
                                   border: "none",
                                   background: "#2474ff",
                                   color: "#fff",
-                                  fontSize: 12,
-                                  fontWeight: 800,
+                                  fontSize: 12, fontWeight: 400,
                                   cursor: "pointer",
                                 }}
                               >
@@ -158,7 +157,7 @@ export function SubmissionsPage() {
                                 setRejectReasonModal({ title: item.title, reason: item.rejectReason as string });
                               }
                             }}
-                            style={{ fontSize: 12, fontWeight: 700, color: "#ef4444", cursor: "pointer", whiteSpace: "nowrap" }}
+                            style={{ fontSize: 12, fontWeight: 400, color: "#ef4444", cursor: "pointer", whiteSpace: "nowrap" }}
                           >
                             拒绝原因
                           </span>
@@ -371,7 +370,7 @@ export function SubmissionDetailPage() {
                   >
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 900, color: "#0f172a" }}>{reward.title}</div>
+                        <div style={{ fontSize: 13, fontWeight: 400, color: "#0f172a" }}>{reward.title}</div>
                         <div style={{ marginTop: 4, fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
                           {reward.range ? `${reward.range}获得` : "已到账赠品"}
                         </div>
@@ -387,7 +386,7 @@ export function SubmissionDetailPage() {
                         gap: 6,
                       }}
                     >
-                      <div style={{ fontSize: 11, fontWeight: 800, color: "#94a3b8", letterSpacing: "0.08em" }}>赠品信息</div>
+                      <div style={{ fontSize: 11, fontWeight: 400, color: "#94a3b8", letterSpacing: "0.08em" }}>赠品信息</div>
                       <div style={{ fontSize: 15, fontWeight: 900, color: "#0f172a" }}>{giftLabelMap[reward.giftName] ?? reward.giftName}</div>
                       <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
                         {arrivedReward ? arrivedReward.note : "奖励已发放到账"}
@@ -533,7 +532,7 @@ function MiniStat({ title, value }: { title: string; value: number }) {
 const iconButtonStyle = (color: string): React.CSSProperties => ({ alignSelf: "center", width: 42, height: 42, borderRadius: 16, border: "none", background: `${color}1f`, color, cursor: "pointer" });
 const iconDisabledStyle: React.CSSProperties = { alignSelf: "center", width: 42, height: 42, borderRadius: 16, background: "rgba(241,245,249,0.9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" };
 const errorBoxStyle: React.CSSProperties = { marginTop: 10, padding: 12, borderRadius: 18, background: "rgba(255,77,79,0.10)", color: "#ef4444", fontSize: 13, lineHeight: 1.6 };
-const linkButtonStyle: React.CSSProperties = { border: "none", background: "transparent", color: "#2474ff", fontSize: 12, fontWeight: 700, cursor: "pointer" };
+const linkButtonStyle: React.CSSProperties = { border: "none", background: "transparent", color: "#2474ff", fontSize: 12, fontWeight: 400, cursor: "pointer" };
 const primaryButtonStyle: React.CSSProperties = { marginTop: 16, height: 42, padding: "0 18px", border: "none", borderRadius: 16, background: "#2474ff", color: "#fff", fontWeight: 800, cursor: "pointer" };
 const summaryShellStyle: React.CSSProperties = {
   display: "grid",
@@ -551,8 +550,8 @@ const summaryStripeStyle: React.CSSProperties = {
 };
 const summaryContentStyle: React.CSSProperties = { display: "grid", gap: 10 };
 const summaryMetaRowStyle: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 };
-const summaryMetaLabelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 800, color: "#94a3b8", letterSpacing: "0.08em" };
-const summaryMetaValueStyle: React.CSSProperties = { fontSize: 12, fontWeight: 800, color: "#334155" };
+const summaryMetaLabelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 400, color: "#94a3b8", letterSpacing: "0.08em" };
+const summaryMetaValueStyle: React.CSSProperties = { fontSize: 12, fontWeight: 400, color: "#334155" };
 const summaryPreviewStyle: React.CSSProperties = {
   padding: 14,
   borderRadius: 16,
@@ -570,8 +569,7 @@ const fakeViewTagStyle: React.CSSProperties = {
   borderRadius: 999,
   height: 30,
   padding: "0 12px",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -581,9 +579,7 @@ const submissionContentRowStyle: React.CSSProperties = {
   gap: 8,
 };
 const submissionContentLabelStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 800,
-  color: "#94a3b8",
+  fontSize: 12, fontWeight: 400, color: "#94a3b8",
   letterSpacing: "0.08em",
 };
 const submissionContentValueStyle: React.CSSProperties = {
@@ -607,8 +603,7 @@ const copyLinkButtonStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "space-between",
   gap: 10,
-  fontSize: 13,
-  fontWeight: 800,
+  fontSize: 13, fontWeight: 400,
   cursor: "pointer",
 };
 const copyLinkIconStyle: React.CSSProperties = {
@@ -639,8 +634,7 @@ const tabStyle = (active: boolean): React.CSSProperties => ({
   border: "none",
   background: active ? "rgba(36,116,255,0.12)" : "rgba(241,245,249,0.9)",
   color: active ? "#2474ff" : "#475569",
-  fontWeight: 800,
-  fontSize: 12,
+  fontWeight: 400, fontSize: 12,
   cursor: "pointer",
 });
 

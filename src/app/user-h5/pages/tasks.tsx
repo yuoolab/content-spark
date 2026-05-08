@@ -24,17 +24,19 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useUserH5 } from "../state";
 import type { Platform, Task, TaskRewardSpec } from "../state";
 import { Card, Container, Pill, SectionTitle, fmtNumber } from "../shared";
-import { PlatformBadge } from "../../components/platform/PlatformBadge";
+import { PlatformLogo } from "../../components/platform/PlatformBadge";
 
 type DetailScene = NonNullable<Task["scene"]>;
 type FollowProofStatus = "待完成" | "已完成" | "审核中" | "已拒绝";
 type FollowProofState = { status: FollowProofStatus; rejectReason?: string; proofUrl?: string };
+type RewardPreviewKind = "points" | "gift" | "cash";
+type EngagementSubmitPreviewState = "pending" | "reviewing" | "rejected" | "approved";
 
 const formatTaskRange = (startDate: string, endDate: string) =>
   `${startDate.split("-").join("/")} 至 ${endDate.split("-").join("/")}`;
@@ -153,7 +155,7 @@ export function TaskListPage() {
                 onClick={() => setStatus(item)}
                 style={taskFilterButtonStyle(active, item)}
               >
-                <Icon size={21} color={active ? meta.accent : "#64748b"} strokeWidth={2.1} />
+                <Icon size={18} color={active ? meta.accent : "#64748b"} strokeWidth={2} />
                 <span>{item}</span>
               </button>
             );
@@ -185,14 +187,6 @@ export function TaskListPage() {
                 }}
               >
                 <div style={taskListCardInnerStyle}>
-                  <div style={taskListImageWrapStyle}>
-                    <img
-                      src={task.image}
-                      alt={task.name}
-                      style={taskListImageStyle}
-                    />
-                  </div>
-
                   <div style={taskListContentStyle}>
                     <div style={taskListTopRowStyle}>
                       <div style={taskListTitleWrapStyle}>
@@ -219,10 +213,6 @@ export function TaskListPage() {
                         <Users size={15} color="#74839f" />
                         <span>参与人数 {fmtNumber(task.participants)}</span>
                       </div>
-                      <div style={taskListMetaItemStyle}>
-                        <Send size={15} color="#74839f" />
-                        <span>提交量 {fmtNumber(task.submissions)}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -248,6 +238,7 @@ export function TaskListPage() {
 
 export function TaskDetailPage() {
   const { id = "" } = useParams();
+  const [searchParams] = useSearchParams();
   const { tasks, submissions, accounts, submitContent, subscribeTaskStartReminder } = useUserH5();
   const navigate = useNavigate();
   const [startReminderSubscribed, setStartReminderSubscribed] = useState(false);
@@ -312,12 +303,24 @@ export function TaskDetailPage() {
     const res = subscribeTaskStartReminder(task.id);
     if (res.ok) setStartReminderSubscribed(true);
   };
+  const previewRewardParam = searchParams.get("reward");
+  const previewRewardKind: RewardPreviewKind =
+    previewRewardParam === "gift" || previewRewardParam === "cash" ? previewRewardParam : "points";
+  const previewSubmitStateParam = searchParams.get("submitState");
+  const previewSubmitState: EngagementSubmitPreviewState =
+    previewSubmitStateParam === "reviewing" ||
+    previewSubmitStateParam === "rejected" ||
+    previewSubmitStateParam === "approved"
+      ? previewSubmitStateParam
+      : "pending";
 
   return (
     <SceneTaskDetail
       task={task}
       scene={task.scene ?? "seeding"}
       rankingEntries={rankingEntries}
+      previewRewardKind={previewRewardKind}
+      previewSubmitState={previewSubmitState}
       accounts={accounts}
       submitContent={submitContent}
       startReminderSubscribed={startReminderSubscribed}
@@ -330,6 +333,8 @@ function SceneTaskDetail({
   task,
   scene,
   rankingEntries,
+  previewRewardKind,
+  previewSubmitState,
   accounts,
   submitContent,
   startReminderSubscribed,
@@ -344,6 +349,8 @@ function SceneTaskDetail({
     platform: string;
     interactionScore: number;
   }>;
+  previewRewardKind: RewardPreviewKind;
+  previewSubmitState: EngagementSubmitPreviewState;
   accounts: Array<{ platform: Platform; accountHandle: string }>;
   submitContent: (payload: {
     taskId: string;
@@ -368,6 +375,7 @@ function SceneTaskDetail({
     3: { status: "已拒绝", rejectReason: "截图未包含主页名称与已关注状态，请按示例图重新上传。" },
   });
   const [followUploadSheet, setFollowUploadSheet] = useState<{ index: number; fileUrl: string } | null>(null);
+  const [engagementUploadSheet, setEngagementUploadSheet] = useState<{ fileUrls: string[] } | null>(null);
   const meta = getDetailSceneMeta(scene);
   const targets = task.followTargets ?? [];
   const actions = task.engagementActions ?? [];
@@ -379,6 +387,14 @@ function SceneTaskDetail({
   const sceneSteps = getSceneSteps(scene);
   const hasLeaderboard = scene === "engagement_reward" && rankingEntries.length > 0;
   const submitButtonText = scene === "follow" || scene === "engagement" ? "去提交凭证" : "去提交内容";
+  const engagementSubmitMeta =
+    previewSubmitState === "reviewing"
+      ? { label: "审核中", disabled: true, tone: "rgba(59,130,246,0.9)", showArrow: false }
+      : previewSubmitState === "rejected"
+      ? { label: "重新提交凭证", disabled: false, tone: "#ef4444", showArrow: false }
+      : previewSubmitState === "approved"
+      ? { label: "已通过，查看奖励", disabled: false, tone: "#22c55e", showArrow: true }
+      : { label: submitButtonText, disabled: false, tone: meta.accent, showArrow: false };
 
   const shortLink = (value: string) => {
     try {
@@ -413,12 +429,6 @@ function SceneTaskDetail({
       toast.error("请先上传该账号的关注截图");
       return;
     }
-    const account = accounts.find((item) => item.platform === target.platform);
-    if (!account) {
-      toast.error(`请先完成 ${target.platform} 账号认证`);
-      return;
-    }
-
     const result = submitContent({
       taskId: task.id,
       platform: target.platform,
@@ -426,7 +436,7 @@ function SceneTaskDetail({
       contentUrl: `https://proof.local/follow/${task.id}/${index + 1}/${Date.now()}`,
       contentPreview: task.proofDescription || "已按要求关注指定账号并提交截图凭证。",
       publishTime: new Date().toLocaleString("zh-CN", { hour12: false }),
-      accountHandle: account.accountHandle,
+      accountHandle: "系统提交",
     });
     if (result.ok) {
       setFollowProofStates((prev) => ({
@@ -443,21 +453,43 @@ function SceneTaskDetail({
   const openFollowUploadSheet = (index: number) => setFollowUploadSheet({ index, fileUrl: "" });
   const closeFollowUploadSheet = () => setFollowUploadSheet(null);
   const activeFollowState = followUploadSheet ? followProofStates[followUploadSheet.index] : undefined;
+  const openEngagementUploadSheet = () => setEngagementUploadSheet({ fileUrls: [] });
+  const closeEngagementUploadSheet = () => setEngagementUploadSheet(null);
+
+  const handleSubmitEngagementProof = () => {
+    if (scene !== "engagement") return;
+    if (!engagementUploadSheet?.fileUrls?.length) {
+      toast.error("请先上传互动截图");
+      return;
+    }
+    const result = submitContent({
+      taskId: task.id,
+      platform: task.engagementPlatform ?? task.platform[0] ?? "小红书",
+      title: `${task.name}｜互动凭证`,
+      contentUrl: `https://proof.local/engagement/${task.id}/${Date.now()}`,
+      contentPreview: `${task.engagementProofDescription || "已按要求完成互动动作并提交截图凭证。"}（共 ${engagementUploadSheet.fileUrls.length} 张截图）`,
+      publishTime: new Date().toLocaleString("zh-CN", { hour12: false }),
+      accountHandle: "系统提交",
+    });
+    if (result.ok) {
+      setEngagementUploadSheet(null);
+      toast.success("截图已提交，等待审核");
+      return;
+    }
+    toast.error(result.message);
+  };
 
   return (
     <Container>
+      <div style={{ position: "relative" }}>
       <div style={{ display: "grid", gap: 12 }}>
-        <section style={detailHeroStyle(meta.accent, meta.soft)}>
-          <div style={detailHeroDecorationStyle(meta.accent)} />
-          <div style={detailHeroContentStyle}>
-            <div style={detailHeroTopRowStyle}>
-              <div style={detailHeroEyebrowStyle(meta.accent)}>{meta.label}</div>
+        <>
+          <section style={followHeroShellStyle}>
+            <h1 style={{ ...followHeroTitleStyle, display: "flex", alignItems: "center", gap: 8 }}>
               <Pill tone={task.status === "进行中" ? "green" : task.status === "未开始" ? "orange" : "gray"}>{task.status}</Pill>
-            </div>
-            <div style={{ display: "grid", gap: 8 }}>
-              <h1 style={detailHeroTitleStyle}>{task.name}</h1>
-              <div style={detailHeroDescStyle}>{meta.description}</div>
-            </div>
+              {task.name}
+            </h1>
+            <div style={followHeroDescStyle}>{meta.description}</div>
             <div style={detailHeroMetaListStyle}>
               <span style={detailHeroMetaPillStyle}>
                 <CalendarDays size={13} />
@@ -468,32 +500,81 @@ function SceneTaskDetail({
                 {fmtNumber(task.participants)} 人参与
               </span>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <Card style={{ padding: 14 }}>
-          <SectionTitle title="任务速览" />
-          <div style={detailHighlightGridStyle}>
-            {detailHighlights.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.label} style={detailHighlightCardStyle(meta.soft)}>
-                  <div style={detailHighlightIconStyle(meta.soft, meta.accent)}>
-                    <Icon size={16} />
+          <Card style={{ padding: 14, borderRadius: 22, border: "1px solid rgba(218,228,242,0.95)" }}>
+            <SectionTitle title={scene === "engagement" ? "参与步骤" : "任务速览"} />
+            {scene === "follow" ? (
+              <div style={followStepListStyle}>
+                {[
+                  { title: "关注指定平台账号", icon: Target, tone: "rgba(20,184,166,0.14)", iconBg: "linear-gradient(145deg,#34d399,#10b981)" },
+                  { title: "上传关注截图", icon: ImageIcon, tone: "rgba(59,130,246,0.14)", iconBg: "linear-gradient(145deg,#60a5fa,#3b82f6)" },
+                  { title: "审核通过发放奖励", icon: Gift, tone: "rgba(139,92,246,0.14)", iconBg: "linear-gradient(145deg,#a78bfa,#8b5cf6)" },
+                ].map((item, index) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.title} style={followStepPairStyle}>
+                      <div style={followStepItemStyle}>
+                        <div style={followStepHeadStyle}>
+                          <div style={followStepBadgeStyle(item.tone)}>
+                            <Icon size={13} color="#fff" />
+                            <span>{index + 1}</span>
+                          </div>
+                        </div>
+                        <div style={followStepTitleStyle}>{item.title}</div>
+                      </div>
+                      {index < 2 && <span style={followStepConnectorStyle} />}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : scene === "engagement" ? (
+              <div style={sceneStepsGridStyle}>
+                {sceneSteps.map((step, index) => (
+                  <div key={step.title} style={sceneStepStyle}>
+                    <div style={sceneStepConnectorStyle(index !== sceneSteps.length - 1)} />
+                    <div style={sceneStepBadgeStyle(meta.accent)}>{String(index + 1).padStart(2, "0")}</div>
+                    <div style={sceneStepTitleStyle}>{step.title}</div>
+                    <div style={sceneStepDescStyle}>{step.desc}</div>
                   </div>
-                  <div style={{ display: "grid", gap: 4 }}>
-                    <div style={detailHighlightLabelStyle}>{item.label}</div>
-                    <div style={detailHighlightValueStyle}>{item.value}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
+                ))}
+              </div>
+            ) : (
+              <div style={followOverviewGridStyle}>
+                {detailHighlights.map((item, index) => {
+                  const Icon = item.icon;
+                  const bg =
+                    index === 0
+                      ? "rgba(22,163,74,0.08)"
+                      : index === 1
+                      ? "rgba(59,130,246,0.08)"
+                      : "rgba(124,58,237,0.08)";
+                  const iconBg =
+                    index === 0
+                      ? "linear-gradient(145deg,#4ad6bc,#35c4a8)"
+                      : index === 1
+                      ? "linear-gradient(145deg,#63a8ff,#3f88ff)"
+                      : "linear-gradient(145deg,#a78bfa,#8b5cf6)";
+
+                  return (
+                    <div key={item.label} style={followOverviewItemStyle(bg)}>
+                      <div style={followOverviewIconStyle(iconBg)}><Icon size={16} color="#fff" /></div>
+                      <div style={detailHighlightLabelStyle}>{item.label}</div>
+                      <div style={followOverviewValueStyle}>{item.value}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </>
 
         {scene === "follow" && (
-          <Card style={{ padding: 14 }}>
-            <SectionTitle title="关注账号清单" />
+          <Card style={followSectionCardStyle}>
+            <div style={followSectionHeaderStyle}>
+              <span style={followSectionAccentBarStyle} />
+              <span>关注账号清单</span>
+            </div>
             <div style={{ display: "grid", gap: 10 }}>
               {targets.map((target, index) => (
                 <div key={`${target.platform}-${target.account}-${index}`} style={followTargetCardStyle}>
@@ -501,49 +582,31 @@ function SceneTaskDetail({
                     const followState = followProofStates[index]?.status ?? "待完成";
                     const hideUpload = followState === "已完成" || followState === "审核中";
                     const isRejected = followState === "已拒绝";
-                    const rejectReason = followProofStates[index]?.rejectReason;
                     return (
                       <>
-                  <div style={{ display: "flex", gap: 10, minWidth: 0, alignItems: "center", flex: 1 }}>
-                    <div style={sceneIndexStyle(meta.accent)}>{index + 1}</div>
-                    <div style={{ minWidth: 0, display: "grid", gap: 6, flex: 1 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <PlatformBadge platform={target.platform} size={13} style={{ width: "fit-content" }} />
-                        <div style={scenePrimaryTextStyle}>{target.account}</div>
-                        <span style={followStatusTagStyle(followState)}>{followState}</span>
-                      </div>
-                      <div style={detailSecondaryTextStyle}>关注完成后需保留主页名称与“已关注”状态的截图。</div>
-                      {isRejected && rejectReason && <div style={followRejectedInlineStyle}>拒绝原因：{rejectReason}</div>}
-                    </div>
-                  </div>
-                  <div style={followProofActionWrapStyle}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
-                      <button
-                        type="button"
-                        onClick={() => void handleCopyText(target.account, target.account)}
-                        style={copyAccountIconButtonStyle(copiedAccount === target.account)}
-                        aria-label={`复制${target.account}`}
-                      >
-                        <Copy size={14} />
-                      </button>
-                      {target.sampleImage && (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewImage({ src: target.sampleImage ?? "", title: `${target.account} 示例图` })}
-                          style={sampleViewButtonStyle}
-                        >
-                          示例图
-                        </button>
-                      )}
-                    </div>
-                    {!hideUpload && (
-                      <div style={followProofUploadRowStyle}>
-                        <button type="button" style={followProofUploadTriggerStyle(isRejected)} onClick={() => openFollowUploadSheet(index)}>
-                          {isRejected ? "重新上传" : "上传截图"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                        <div style={followCardHeaderStyle}>
+                          <div style={followCardTitleWrapStyle}>
+                            <PlatformLogo platform={target.platform} size={16} />
+                            <div style={scenePrimaryTextStyle}>{target.account}</div>
+                            <button
+                              type="button"
+                              onClick={() => void handleCopyText(target.account, target.account)}
+                              style={followCopyIconButtonStyle(copiedAccount === target.account)}
+                              aria-label={`复制${target.account}`}
+                            >
+                              <Copy size={14} />
+                            </button>
+                          </div>
+                          <span style={followStatusTagStyle(followState)}>{followState}</span>
+                        </div>
+                        <div style={followCardFooterStyle}>
+                          <div style={detailSecondaryTextStyle}>请复制账号名称在对应平台搜索后关注，详情请看示例图。</div>
+                          {!hideUpload && (
+                            <button type="button" style={followProofUploadTriggerStyle(isRejected)} onClick={() => openFollowUploadSheet(index)}>
+                              {isRejected ? "重新上传" : "上传截图"}
+                            </button>
+                          )}
+                        </div>
                       </>
                     );
                   })()}
@@ -560,7 +623,12 @@ function SceneTaskDetail({
               <InfoRow
                 icon={BadgeCheck}
                 label="互动平台"
-                value={<PlatformBadge platform={task.engagementPlatform ?? task.platform[0] ?? "小红书"} size={13} />}
+                value={
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <PlatformLogo platform={task.engagementPlatform ?? task.platform[0] ?? "小红书"} size={16} />
+                    <span>{task.engagementPlatform ?? task.platform[0] ?? "小红书"}</span>
+                  </span>
+                }
               />
               <InfoRow
                 icon={Link2}
@@ -675,33 +743,25 @@ function SceneTaskDetail({
           </>
         )}
 
-        <Card style={{ padding: 14 }}>
-          <SectionTitle title="规则说明" />
-          <ol style={sceneRuleListStyle}>
-            {sceneRules.map((item) => (
-              <li key={item} style={sceneRuleItemStyle}>
-                {item}
-              </li>
-            ))}
-          </ol>
-        </Card>
-
-        <Card style={{ padding: 14 }}>
-          <SectionTitle title={scene === "engagement_reward" ? "奖励与计奖方式" : "奖励说明"} />
+        <Card style={scene === "follow" ? followSectionCardStyle : { padding: 14 }}>
+          {scene === "follow" ? (
+            <div style={{ ...followSectionHeaderStyle, justifyContent: "space-between" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <span style={followSectionAccentBarStyle} />
+                <span>奖励说明</span>
+              </div>
+              <button type="button" style={followRewardLinkButtonStyle} onClick={() => navigate("/rewards")}>
+                <span>查看奖励</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          ) : (
+            <SectionTitle title={scene === "engagement_reward" ? "奖励与计奖方式" : "奖励说明"} />
+          )}
           <div style={{ display: "grid", gap: 10 }}>
             {task.rewardSpecs.map((spec) => (
-              <RewardSpecCard key={spec.id} spec={spec} />
+              <RewardSpecCard key={spec.id} spec={spec} previewRewardKind={previewRewardKind} />
             ))}
-            {baseReward && (
-              <div style={detailRewardHintStyle(meta.soft)}>
-                <Zap size={15} color={meta.accent} />
-                <span>
-                  {baseReward.releaseMode === "after_end"
-                    ? `基础奖励会在活动结束后 ${baseReward.releaseDays} 天内统一发放。`
-                    : `基础奖励会在审核通过后 ${baseReward.releaseDays} 天内发放。`}
-                </span>
-              </div>
-            )}
             {scene === "engagement_reward" && performanceSpecs.length > 0 && (
               <div style={detailRewardHintStyle(meta.soft)}>
                 <TrendingUp size={15} color={meta.accent} />
@@ -712,32 +772,59 @@ function SceneTaskDetail({
         </Card>
 
         <Card style={{ padding: 14 }}>
-          <SectionTitle title="参与步骤" />
-          <div style={sceneStepsGridStyle}>
-            {sceneSteps.map((step, index) => (
-              <div key={step.title} style={sceneStepStyle}>
-                <div style={sceneStepConnectorStyle(index !== sceneSteps.length - 1)} />
-                <div style={sceneStepBadgeStyle(meta.accent)}>{String(index + 1).padStart(2, "0")}</div>
-                <div style={sceneStepTitleStyle}>{step.title}</div>
-                <div style={sceneStepDescStyle}>{step.desc}</div>
-              </div>
+          {scene === "follow" ? (
+            <div style={followSectionHeaderStyle}>
+              <span style={followSectionAccentBarStyle} />
+              <span>规则说明</span>
+            </div>
+          ) : (
+            <SectionTitle title="规则说明" />
+          )}
+          <ol style={sceneRuleListStyle}>
+            {sceneRules.map((item, index) => (
+              <li key={item} style={sceneRuleItemStyle}>
+                <span style={sceneRuleIndexStyle}>{index + 1}.</span>
+                <span>{item}</span>
+              </li>
             ))}
-          </div>
+          </ol>
         </Card>
 
-        <Card style={{ padding: 14 }}>
-          <SectionTitle title="参与提醒" />
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={detailTipCardStyle(meta.soft)}>
-              <div style={detailTipTitleStyle}>先完成账号认证</div>
-              <div style={detailTipTextStyle}>提交内容或凭证时会校验平台认证状态，未绑定账号将无法提交。</div>
-            </div>
-            <div style={detailTipCardStyle(meta.soft)}>
-              <div style={detailTipTitleStyle}>同一链接不可重复领奖</div>
-              <div style={detailTipTextStyle}>系统会校验重复投稿、账号归属和内容状态，删除内容后奖励可能失效。</div>
-            </div>
-          </div>
-        </Card>
+        {scene !== "follow" && scene !== "engagement" && (
+          <>
+            <Card style={{ padding: 14 }}>
+              <SectionTitle title="参与步骤" />
+              <div style={sceneStepsGridStyle}>
+                {sceneSteps.map((step, index) => (
+                  <div key={step.title} style={sceneStepStyle}>
+                    <div style={sceneStepConnectorStyle(index !== sceneSteps.length - 1)} />
+                    <div style={sceneStepBadgeStyle(meta.accent)}>{String(index + 1).padStart(2, "0")}</div>
+                    <div style={sceneStepTitleStyle}>{step.title}</div>
+                    <div style={sceneStepDescStyle}>{step.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card style={{ padding: 14 }}>
+              <SectionTitle title="参与提醒" />
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={detailTipCardStyle(meta.soft)}>
+                  <div style={detailTipTitleStyle}>{scene === "engagement" ? "按规则提交凭证" : "先完成账号认证"}</div>
+                  <div style={detailTipTextStyle}>
+                    {scene === "engagement"
+                      ? "内容互动任务可直接提交截图凭证，无需先完成账号认证。"
+                      : "提交内容时会校验平台认证状态，未绑定账号将无法提交。"}
+                  </div>
+                </div>
+                <div style={detailTipCardStyle(meta.soft)}>
+                  <div style={detailTipTitleStyle}>同一链接不可重复领奖</div>
+                  <div style={detailTipTextStyle}>系统会校验重复投稿、账号归属和内容状态，删除内容后奖励可能失效。</div>
+                </div>
+              </div>
+            </Card>
+          </>
+        )}
       </div>
 
       {task.status !== "未开始" && (
@@ -756,8 +843,34 @@ function SceneTaskDetail({
       {task.status === "进行中" && scene !== "follow" && (
         <div style={detailSubmitDockStyle}>
           <div style={detailSubmitInnerStyle}>
-            <button onClick={() => navigate(`/submit?taskId=${task.id}`)} style={{ ...detailSubmitButtonStyle, background: meta.accent }}>
-              {submitButtonText}
+            <button
+              disabled={scene === "engagement" ? engagementSubmitMeta.disabled : false}
+              onClick={() => {
+                if (scene === "engagement") {
+                  if (previewSubmitState === "approved") {
+                    navigate("/rewards");
+                    return;
+                  }
+                  openEngagementUploadSheet();
+                  return;
+                }
+                navigate(`/submit?taskId=${task.id}`);
+              }}
+              style={{
+                ...detailSubmitButtonStyle,
+                background: scene === "engagement" ? engagementSubmitMeta.tone : meta.accent,
+                cursor: scene === "engagement" && engagementSubmitMeta.disabled ? "not-allowed" : "pointer",
+                opacity: scene === "engagement" && engagementSubmitMeta.disabled ? 0.9 : 1,
+              }}
+            >
+              {scene === "engagement" ? (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <span>{engagementSubmitMeta.label}</span>
+                  {engagementSubmitMeta.showArrow ? <ChevronRight size={16} /> : null}
+                </span>
+              ) : (
+                submitButtonText
+              )}
             </button>
           </div>
         </div>
@@ -819,9 +932,7 @@ function SceneTaskDetail({
         <div style={followUploadBackdropStyle} onClick={closeFollowUploadSheet}>
           <div style={followUploadSheetStyle} onClick={(event) => event.stopPropagation()}>
             <div style={followUploadHeadStyle}>
-              <div style={followUploadTitleStyle}>
-                上传关注截图（{followUploadSheet.index + 1}/{targets.length}）
-              </div>
+              <div style={followUploadTitleStyle}>上传关注截图</div>
               <button type="button" onClick={closeFollowUploadSheet} style={followUploadCloseStyle}>
                 关闭
               </button>
@@ -829,23 +940,39 @@ function SceneTaskDetail({
             {activeFollowState?.status === "已拒绝" && activeFollowState.rejectReason && (
               <div style={followUploadRejectReasonStyle}>拒绝原因：{activeFollowState.rejectReason}</div>
             )}
-            <label style={followUploadPickerStyle(Boolean(followUploadSheet.fileUrl))}>
-              {followUploadSheet.fileUrl ? (
-                <img src={followUploadSheet.fileUrl} alt="关注截图预览" style={followUploadPreviewImageStyle} />
-              ) : (
-                <span style={followUploadPickerTextStyle}>点击选择截图</span>
+            <div style={followUploadMediaRowStyle}>
+              {targets[followUploadSheet.index]?.sampleImage && (
+                <div style={followUploadMediaItemStyle}>
+                  <div style={followUploadMediaLabelStyle}>示例图</div>
+                  <img
+                    src={targets[followUploadSheet.index].sampleImage}
+                    alt="示例图"
+                    style={followUploadSampleImageStyle}
+                    onClick={() => setPreviewImage({ src: targets[followUploadSheet.index].sampleImage ?? "", title: "示例图" })}
+                  />
+                </div>
               )}
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  setFollowUploadSheet((prev) => (prev ? { ...prev, fileUrl: URL.createObjectURL(file) } : prev));
-                }}
-              />
-            </label>
+              <div style={followUploadMediaItemStyle}>
+                <div style={followUploadMediaLabelStyle}>选择截图</div>
+                <label style={followUploadPickerStyle(Boolean(followUploadSheet.fileUrl))}>
+                  {followUploadSheet.fileUrl ? (
+                    <img src={followUploadSheet.fileUrl} alt="关注截图预览" style={followUploadPreviewImageStyle} />
+                  ) : (
+                    <span style={followUploadPickerTextStyle}>点击选择</span>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      setFollowUploadSheet((prev) => (prev ? { ...prev, fileUrl: URL.createObjectURL(file) } : prev));
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
             <button
               type="button"
               style={followUploadSubmitInSheetStyle}
@@ -857,6 +984,76 @@ function SceneTaskDetail({
                 handleSubmitSingleFollowProof(followUploadSheet.index);
               }}
             >
+              提交截图
+            </button>
+          </div>
+        </div>
+      )}
+
+      {engagementUploadSheet && scene === "engagement" && (
+        <div style={followUploadBackdropStyle} onClick={closeEngagementUploadSheet}>
+          <div style={followUploadSheetStyle} onClick={(event) => event.stopPropagation()}>
+            <div style={followUploadHeadStyle}>
+              <div style={followUploadTitleStyle}>上传互动截图</div>
+              <button type="button" onClick={closeEngagementUploadSheet} style={followUploadCloseStyle}>
+                关闭
+              </button>
+            </div>
+            {previewSubmitState === "rejected" && (
+              <div style={followUploadRejectReasonStyle}>拒绝原因：截图未包含完整互动状态和评论内容，请按示例图重新上传。</div>
+            )}
+            <div style={{ display: "grid", gap: 12 }}>
+              {task.engagementSampleImage && (
+                <div style={followUploadMediaItemStyle}>
+                  <div style={followUploadMediaLabelStyle}>示例图</div>
+                  <img
+                    src={task.engagementSampleImage}
+                    alt="示例图"
+                    style={{ ...followUploadSampleImageStyle, width: 132, height: 132 }}
+                    onClick={() => setPreviewImage({ src: task.engagementSampleImage ?? "", title: "示例图" })}
+                  />
+                </div>
+              )}
+              <div style={followUploadMediaItemStyle}>
+                <div style={followUploadMediaLabelStyle}>上传截图</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+                  {[0, 1].map((slot) => (
+                    <label
+                      key={slot}
+                      style={{
+                        ...followUploadPickerStyle(Boolean(engagementUploadSheet.fileUrls[slot])),
+                        width: 132,
+                        height: 132,
+                        aspectRatio: "1 / 1",
+                      }}
+                    >
+                      {engagementUploadSheet.fileUrls[slot] ? (
+                        <img src={engagementUploadSheet.fileUrls[slot]} alt={`互动截图预览${slot + 1}`} style={followUploadPreviewImageStyle} />
+                      ) : (
+                        <span style={followUploadPickerTextStyle}>{`选择第${slot + 1}张`}</span>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: "none" }}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (!file) return;
+                          setEngagementUploadSheet((prev) => {
+                            if (!prev) return prev;
+                            const next = [...prev.fileUrls];
+                            next[slot] = URL.createObjectURL(file);
+                            return { ...prev, fileUrls: next.slice(0, 2) };
+                          });
+                        }}
+                      />
+                    </label>
+                  ))}
+                </div>
+                <div style={{ fontSize: 11, color: "#64748b", fontWeight: 400 }}>最多支持上传 2 张截图</div>
+              </div>
+            </div>
+            <button type="button" style={followUploadSubmitInSheetStyle} onClick={handleSubmitEngagementProof}>
               提交截图
             </button>
           </div>
@@ -878,6 +1075,7 @@ function SceneTaskDetail({
           </div>
         </div>
       )}
+      </div>
     </Container>
   );
 }
@@ -953,7 +1151,7 @@ function getSceneRules(task: Task, scene: DetailScene) {
     return [
       ...(task.proofDescription?.split(/\n+/).map((item) => item.trim()).filter(Boolean) ?? []),
       `需完成全部指定账号关注后再提交，当前共 ${task.followTargets?.length ?? 0} 个账号。`,
-      `每位用户最多可提交 ${task.maxPerUser} 次，截图需清晰展示账号名称与已关注状态。`,
+      `截图需清晰展示账号名称与已关注状态。`,
     ];
   }
 
@@ -962,7 +1160,6 @@ function getSceneRules(task: Task, scene: DetailScene) {
       ...(task.engagementProofDescription?.split(/\n+/).map((item) => item.trim()).filter(Boolean) ?? []),
       `需完成 ${task.engagementActions?.join("、") || "指定互动动作"} 后再提交凭证。`,
       ...(task.commentKeyword ? [`评论内容需包含关键词「${task.commentKeyword}」。`] : []),
-      `每位用户最多可提交 ${task.maxPerUser} 次，重复内容链接不可重复领奖。`,
     ];
   }
 
@@ -995,10 +1192,10 @@ function getSceneSteps(scene: DetailScene) {
 
   if (scene === "engagement") {
     return [
-      { title: "打开内容", desc: "进入指定内容页确认互动要求" },
-      { title: "完成动作", desc: "按要求点赞、收藏、评论" },
-      { title: "保存凭证", desc: "截图留存互动结果和账号信息" },
-      { title: "提交审核", desc: "上传互动凭证等待审核" },
+      { title: "打开内容", desc: "复制链接在浏览器打开" },
+      { title: "完成互动", desc: "按要求完成互动动作" },
+      { title: "上传凭证", desc: "截图互动结果并上传提交" },
+      { title: "发放奖励", desc: "上传凭证审核通过发放奖励" },
     ];
   }
 
@@ -1026,14 +1223,14 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
         <div style={{ width: 26, height: 26, borderRadius: 9, background: "rgba(36,116,255,0.10)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <Icon size={13} color="#2474ff" />
         </div>
-        <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600, lineHeight: 1.15 }}>{label}</div>
+        <div style={{ fontSize: 12, color: "#64748b", fontWeight: 400, lineHeight: 1.15 }}>{label}</div>
       </div>
       <div style={{ fontSize: 12, color: "#0f172a", fontWeight: 700, textAlign: "right", lineHeight: 1.25, maxWidth: "56%", overflowWrap: "anywhere" }}>{value}</div>
     </div>
   );
 }
 
-function RewardSpecCard({ spec }: { spec: TaskRewardSpec }) {
+function RewardSpecCard({ spec, previewRewardKind }: { spec: TaskRewardSpec; previewRewardKind: RewardPreviewKind }) {
   const rewardTone = (rewardType: "points" | "gift" | "cash") =>
     rewardType === "gift" ? "orange" : rewardType === "cash" ? "red" : "blue";
 
@@ -1061,8 +1258,7 @@ function RewardSpecCard({ spec }: { spec: TaskRewardSpec }) {
           borderRadius: 999,
           background: "rgba(250,173,20,0.12)",
           color: "#f59e0b",
-          fontSize: 12,
-          fontWeight: 700,
+          fontSize: 12, fontWeight: 400,
           whiteSpace: "nowrap",
         }}
       >
@@ -1103,6 +1299,19 @@ function RewardSpecCard({ spec }: { spec: TaskRewardSpec }) {
     combined: "综合互动",
   } as const;
 
+  const previewRewardMeta =
+    previewRewardKind === "gift"
+      ? { name: GIFT_LABELS.g1, image: GIFT_IMAGES.g1, tone: "rgba(250,173,20,0.12)", border: "rgba(250,173,20,0.24)" }
+      : previewRewardKind === "cash"
+      ? { name: "现金红包", image: GIFT_IMAGES.g5, tone: "rgba(255,77,79,0.10)", border: "rgba(255,77,79,0.24)" }
+      : { name: "积分奖励", image: GIFT_IMAGES.g2, tone: "rgba(36,116,255,0.10)", border: "rgba(36,116,255,0.22)" };
+  const previewAmountText =
+    previewRewardKind === "points"
+      ? `${spec.amount} 星云币`
+      : previewRewardKind === "cash"
+      ? `${spec.amount} 元红包`
+      : "价值299元";
+
   return (
     <div
       style={{
@@ -1126,10 +1335,36 @@ function RewardSpecCard({ spec }: { spec: TaskRewardSpec }) {
       </div>
 
       {spec.kind === "base" && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "8px 10px", borderRadius: 14, background: "rgba(255,255,255,0.92)" }}>
-          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>奖励内容</div>
+        <div style={{ display: "grid", gap: 8, padding: "8px 10px", borderRadius: 14, background: "rgba(255,255,255,0.92)" }}>
+          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 400 }}>奖励内容</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 8, borderRadius: 12, background: previewRewardMeta.tone, border: `1px solid ${previewRewardMeta.border}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <img src={previewRewardMeta.image} alt={previewRewardMeta.name} style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+            <div style={{ fontSize: 13, color: "#0f172a", fontWeight: 700 }}>{previewRewardMeta.name}</div>
+            </div>
+            {previewAmountText ? (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: 28,
+                  padding: "0 10px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(148,163,184,0.44)",
+                  background: "rgba(255,255,255,0.86)",
+                  color: "#0f172a",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                {previewAmountText}
+              </span>
+            ) : null}
+          </div>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {renderRewardBadge(spec.rewardType, spec.amount, spec.giftName)}
             {!!spec.lotteryChances && (
               <span
                 style={{
@@ -1140,8 +1375,7 @@ function RewardSpecCard({ spec }: { spec: TaskRewardSpec }) {
                   borderRadius: 999,
                   background: "rgba(250,173,20,0.14)",
                   color: "#b45309",
-                  fontSize: 12,
-                  fontWeight: 700,
+                  fontSize: 12, fontWeight: 400,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -1154,7 +1388,7 @@ function RewardSpecCard({ spec }: { spec: TaskRewardSpec }) {
 
       {spec.kind === "ranking" && (
         <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>按 {metricLabelMap[spec.metric]} 排名计算</div>
+          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 400 }}>按 {metricLabelMap[spec.metric]} 排名计算</div>
           <div style={{ display: "grid", gap: 8 }}>
             {spec.tiers.map((tier) => (
               <div
@@ -1181,7 +1415,7 @@ function RewardSpecCard({ spec }: { spec: TaskRewardSpec }) {
 
       {spec.kind === "fixed" && (
         <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 600 }}>触发指标：{metricLabelMap[spec.metric]}</div>
+          <div style={{ fontSize: 12, color: "#64748b", fontWeight: 400 }}>触发指标：{metricLabelMap[spec.metric]}</div>
           <div style={{ display: "grid", gap: 8 }}>
             {spec.rules.map((rule, index) => (
               <div
@@ -1265,8 +1499,7 @@ const detailHeroEyebrowStyle = (accent: string): React.CSSProperties => ({
   borderRadius: 999,
   background: colorAlpha(accent, 0.18),
   color: accent,
-  fontSize: 12,
-  fontWeight: 900,
+  fontSize: 12, fontWeight: 400,
   letterSpacing: "0.08em",
 });
 
@@ -1302,8 +1535,7 @@ const detailHeroMetaPillStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.88)",
   border: "1px solid rgba(226,232,240,0.96)",
   color: "#475569",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
 };
 
 const detailHighlightGridStyle: React.CSSProperties = {
@@ -1335,8 +1567,7 @@ const detailHighlightIconStyle = (soft: string, accent: string): React.CSSProper
 const detailHighlightLabelStyle: React.CSSProperties = {
   fontSize: 12,
   lineHeight: 1.2,
-  color: "#64748b",
-  fontWeight: 700,
+  color: "#64748b", fontWeight: 400,
 };
 
 const detailHighlightValueStyle: React.CSSProperties = {
@@ -1349,8 +1580,9 @@ const detailHighlightValueStyle: React.CSSProperties = {
 const detailSecondaryTextStyle: React.CSSProperties = {
   fontSize: 12,
   lineHeight: 1.6,
-  color: "#64748b",
-  fontWeight: 700,
+  color: "#64748b", fontWeight: 400,
+  flex: 1,
+  minWidth: 0,
 };
 
 const detailTagBoardStyle = (soft: string): React.CSSProperties => ({
@@ -1364,8 +1596,7 @@ const detailTagBoardStyle = (soft: string): React.CSSProperties => ({
 
 const detailTagBoardLabelStyle: React.CSSProperties = {
   fontSize: 12,
-  color: "#64748b",
-  fontWeight: 800,
+  color: "#64748b", fontWeight: 400,
 };
 
 const detailTagWrapStyle: React.CSSProperties = {
@@ -1381,8 +1612,7 @@ const detailTagStyle = (accent: string, soft: string): React.CSSProperties => ({
   borderRadius: 999,
   background: soft,
   color: accent,
-  fontSize: 12,
-  fontWeight: 900,
+  fontSize: 12, fontWeight: 400,
 });
 
 const detailBriefStyle = (soft: string): React.CSSProperties => ({
@@ -1403,8 +1633,7 @@ const detailBriefTitleStyle: React.CSSProperties = {
 const detailBriefTextStyle: React.CSSProperties = {
   fontSize: 13,
   lineHeight: 1.8,
-  color: "#475569",
-  fontWeight: 700,
+  color: "#475569", fontWeight: 400,
 };
 
 const detailRankingPreviewRowStyle = (soft: string): React.CSSProperties => ({
@@ -1431,8 +1660,7 @@ const detailRankingTitleStyle: React.CSSProperties = {
   marginTop: 4,
   fontSize: 12,
   lineHeight: 1.4,
-  color: "#64748b",
-  fontWeight: 700,
+  color: "#64748b", fontWeight: 400,
   overflow: "hidden",
   textOverflow: "ellipsis",
   whiteSpace: "nowrap",
@@ -1455,8 +1683,7 @@ const detailSecondaryButtonStyle = (accent: string, soft: string): React.CSSProp
   borderRadius: 999,
   background: soft,
   color: accent,
-  fontSize: 13,
-  fontWeight: 900,
+  fontSize: 13, fontWeight: 400,
   cursor: "pointer",
 });
 
@@ -1511,8 +1738,7 @@ const sceneHeroBadgeStyle: React.CSSProperties = {
   justifyContent: "space-between",
   gap: 10,
   minHeight: 24,
-  fontSize: 12,
-  fontWeight: 900,
+  fontSize: 12, fontWeight: 400,
   color: "#2474ff",
 };
 
@@ -1549,8 +1775,7 @@ const sceneHeroMetaPillStyle: React.CSSProperties = {
   borderRadius: 999,
   background: "rgba(255,255,255,0.72)",
   color: "#52647f",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
 };
 
 const followParticipantsStyle: React.CSSProperties = {
@@ -1559,35 +1784,42 @@ const followParticipantsStyle: React.CSSProperties = {
   justifyContent: "flex-end",
   gap: 6,
   color: "#52647f",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
   marginLeft: "auto",
   textAlign: "right",
   flexShrink: 0,
 };
 
 const followTargetCardStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 10,
+  padding: "12px 11px",
+  borderRadius: 16,
+  background: "linear-gradient(180deg, rgba(246,250,255,0.98), rgba(255,255,255,1))",
+  border: "1px solid rgba(218,228,242,0.88)",
+};
+
+const followCardHeaderStyle: React.CSSProperties = {
   display: "flex",
-  alignItems: "stretch",
+  alignItems: "center",
   justifyContent: "space-between",
-  gap: 12,
-  padding: 12,
-  borderRadius: 20,
-  background: "linear-gradient(180deg, rgba(248,250,252,0.96), rgba(255,255,255,0.98))",
-  border: "1px solid rgba(226,232,240,0.92)",
+  gap: 10,
+  minWidth: 0,
 };
 
-const followProofActionWrapStyle: React.CSSProperties = {
-  display: "grid",
+const followCardTitleWrapStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
   gap: 8,
-  minWidth: 126,
-  flexShrink: 0,
+  minWidth: 0,
+  flex: 1,
 };
 
-const followProofUploadRowStyle: React.CSSProperties = {
-  display: "grid",
-  gap: 6,
-  justifyItems: "end",
+const followCardFooterStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 8,
 };
 
 const followStatusTagStyle = (status: FollowProofStatus): React.CSSProperties => {
@@ -1608,51 +1840,323 @@ const followStatusTagStyle = (status: FollowProofStatus): React.CSSProperties =>
     border: `1px solid ${tone.border}`,
     background: tone.bg,
     color: tone.color,
-    fontSize: 11,
-    fontWeight: 800,
+    fontSize: 11, fontWeight: 400,
   };
 };
 
-const followRejectedInlineStyle: React.CSSProperties = {
-  fontSize: 11,
-  lineHeight: 1.5,
-  color: "#dc2626",
-  fontWeight: 700,
+const followCopyIconButtonStyle = (copied: boolean): React.CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: 32,
+  height: 32,
+  padding: 0,
+  borderRadius: 8,
+  border: "none",
+  background: copied ? "rgba(36,116,255,0.10)" : "transparent",
+  color: copied ? "#2474ff" : "#94a3b8",
+  cursor: "pointer",
+  flexShrink: 0,
+});
+
+const followGhostActionStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: 32,
+  minWidth: 68,
+  padding: "0 10px",
+  borderRadius: 8,
+  border: "1px solid rgba(191,219,254,0.9)",
+  background: "rgba(239,246,255,0.78)",
+  color: "#2563eb",
+  fontSize: 12, fontWeight: 400,
+  cursor: "pointer",
+  flexShrink: 0,
 };
 
 const followProofUploadTriggerStyle = (danger?: boolean): React.CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  minWidth: 88,
-  height: 28,
+  minWidth: 80,
+  height: 32,
   padding: "0 10px",
-  borderRadius: 999,
-  border: danger ? "1px solid rgba(239,68,68,0.22)" : "1px solid rgba(36,116,255,0.18)",
-  background: danger ? "rgba(239,68,68,0.10)" : "rgba(36,116,255,0.08)",
+  borderRadius: 8,
+  border: danger ? "1px solid rgba(252,165,165,0.92)" : "1px solid rgba(191,219,254,0.95)",
+  background: danger ? "rgba(254,242,242,0.92)" : "rgba(239,246,255,0.84)",
   color: danger ? "#dc2626" : "#2474ff",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
   cursor: "pointer",
 });
 
+const followHeroShellStyle: React.CSSProperties = {
+  position: "relative",
+  overflow: "hidden",
+  borderRadius: 28,
+  padding: 16,
+  border: "1px solid rgba(215,228,243,0.92)",
+  background: "linear-gradient(135deg, #e6fcf5 0%, #e0f7fa 30%, #e8f4fd 60%, #f0f4ff 100%)",
+  boxShadow: "0 14px 34px rgba(149,180,214,0.18)",
+  display: "grid",
+  gap: 10,
+};
+
+const followHeroTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 48 / 3,
+  lineHeight: 1.28,
+  color: "#0f172a",
+  fontWeight: 900,
+  letterSpacing: "-0.02em",
+};
+
+const followHeroDescStyle: React.CSSProperties = {
+  fontSize: 14,
+  lineHeight: 1.72,
+  color: "#4b5e7a",
+  fontWeight: 400,
+  width: "100%",
+  maxWidth: "100%",
+  textAlign: "left",
+};
+
+const followHeroOrnamentStyle: React.CSSProperties = {
+  position: "absolute",
+  right: -20,
+  bottom: -24,
+  width: 180,
+  height: 160,
+  pointerEvents: "none",
+};
+
+const followHeroBubbleStyle: React.CSSProperties = {
+  position: "absolute",
+  right: 28,
+  bottom: 30,
+  width: 110,
+  height: 110,
+  borderRadius: "50%",
+  background: "radial-gradient(circle at 30% 26%, #9af3e8, #58d7c9 62%, #51b8d0 100%)",
+  filter: "drop-shadow(0 16px 24px rgba(64,190,193,0.24))",
+};
+
+const followHeroArrowStyle: React.CSSProperties = {
+  position: "absolute",
+  right: 6,
+  bottom: 16,
+  width: 90,
+  height: 64,
+  borderRadius: 24,
+  background: "linear-gradient(145deg, rgba(208,235,255,0.98), rgba(121,182,255,0.5))",
+  transform: "rotate(-28deg)",
+};
+
+const followOverviewGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  gap: 10,
+};
+
+const followOverviewItemStyle = (bg: string): React.CSSProperties => ({
+  display: "grid",
+  gap: 6,
+  alignContent: "start",
+  minHeight: 126,
+  borderRadius: 20,
+  padding: 12,
+  border: "1px solid rgba(218,228,242,0.88)",
+  background: `linear-gradient(180deg, ${bg}, rgba(255,255,255,0.98))`,
+});
+
+const followOverviewIconStyle = (bg: string): React.CSSProperties => ({
+  width: 38,
+  height: 38,
+  borderRadius: "50%",
+  background: bg,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxShadow: "0 10px 20px rgba(59,130,246,0.18)",
+});
+
+const followOverviewValueStyle: React.CSSProperties = {
+  fontSize: 36 / 3,
+  lineHeight: 1.35,
+  color: "#0f172a",
+  fontWeight: 900,
+};
+
+const followStepListStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  alignItems: "start",
+  gap: 0,
+};
+
+const followStepPairStyle: React.CSSProperties = {
+  width: "100%",
+  minWidth: 0,
+  position: "relative",
+  display: "grid",
+  justifyItems: "center",
+  alignItems: "flex-start",
+};
+
+const followStepItemStyle: React.CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  display: "grid",
+  gap: 8,
+  alignContent: "start",
+  padding: "0 6px",
+  justifyItems: "center",
+};
+
+const followStepHeadStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const followStepBadgeStyle = (bg: string): React.CSSProperties => ({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 5,
+  height: 28,
+  minWidth: 52,
+  padding: "0 10px",
+  borderRadius: 999,
+  background: bg,
+  border: "1px solid rgba(203,213,225,0.8)",
+  color: "#1e293b",
+  fontSize: 13,
+  fontWeight: 700,
+  justifyContent: "center",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+});
+
+const followStepTitleStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.35,
+  color: "#0f172a",
+  fontWeight: 500,
+  wordBreak: "break-word",
+  whiteSpace: "nowrap",
+  textAlign: "center",
+};
+
+const followStepConnectorStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 14,
+  left: "calc(50% + 30px)",
+  width: "calc(100% - 60px)",
+  height: 1,
+  borderTop: "1px dashed rgba(148,163,184,0.75)",
+};
+
+const engagementStepGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: 8,
+};
+
+const engagementStepCardStyle = (tone: string): React.CSSProperties => ({
+  minHeight: 56,
+  borderRadius: 14,
+  border: "1px solid rgba(218,228,242,0.9)",
+  background: `linear-gradient(180deg, ${tone}, rgba(255,255,255,0.98))`,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "8px 10px",
+});
+
+const engagementStepIndexStyle: React.CSSProperties = {
+  width: 22,
+  height: 22,
+  borderRadius: 999,
+  background: "rgba(15,23,42,0.08)",
+  color: "#0f172a",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 12,
+  fontWeight: 700,
+  flexShrink: 0,
+};
+
+const engagementStepTextStyle: React.CSSProperties = {
+  fontSize: 12,
+  lineHeight: 1.35,
+  color: "#0f172a",
+  fontWeight: 500,
+};
+
+const followSectionCardStyle: React.CSSProperties = {
+  padding: 14,
+  borderRadius: 24,
+  border: "1px solid rgba(220,230,245,0.95)",
+  background: "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(249,252,255,0.98))",
+  boxShadow: "0 10px 28px rgba(148,173,211,0.12)",
+};
+
+const followSectionHeaderStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "flex-start",
+  gap: 8,
+  marginBottom: 12,
+  fontSize: 40 / 3,
+  color: "#0f172a",
+  fontWeight: 900,
+};
+
+const followRewardLinkButtonStyle: React.CSSProperties = {
+  border: "none",
+  background: "transparent",
+  color: "#2474ff",
+  fontSize: 12,
+  fontWeight: 500,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 2,
+  cursor: "pointer",
+  padding: 0,
+};
+
+const followSectionAccentBarStyle: React.CSSProperties = {
+  width: 4,
+  height: 22,
+  borderRadius: 999,
+  background: "linear-gradient(180deg,#69e5d7,#2cc4b0)",
+  flexShrink: 0,
+};
+
 const followUploadBackdropStyle: React.CSSProperties = {
   position: "fixed",
-  inset: 0,
-  background: "rgba(15,23,42,0.42)",
-  zIndex: 70,
+  left: "50%",
+  transform: "translateX(-50%)",
+  top: 0,
+  bottom: 0,
+  width: "var(--h5-screen-width)",
+  background: "rgba(15,23,42,0.35)",
+  borderRadius: 34,
+  zIndex: 40,
   display: "flex",
   alignItems: "flex-end",
+  overflow: "hidden",
 };
 
 const followUploadSheetStyle: React.CSSProperties = {
   width: "100%",
-  borderTopLeftRadius: 22,
-  borderTopRightRadius: 22,
+  minHeight: 420,
+  borderTopLeftRadius: 18,
+  borderTopRightRadius: 18,
   background: "#fff",
-  padding: "14px 14px calc(env(safe-area-inset-bottom) + 14px)",
+  padding: "24px 12px 28px",
   display: "grid",
-  gap: 12,
+  gap: 10,
 };
 
 const followUploadHeadStyle: React.CSSProperties = {
@@ -1671,8 +2175,7 @@ const followUploadCloseStyle: React.CSSProperties = {
   border: "none",
   background: "transparent",
   color: "#64748b",
-  fontSize: 13,
-  fontWeight: 700,
+  fontSize: 13, fontWeight: 400,
   cursor: "pointer",
 };
 
@@ -1686,8 +2189,36 @@ const followUploadRejectReasonStyle: React.CSSProperties = {
   padding: "8px 10px",
 };
 
+const followUploadMediaRowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 12,
+  flexWrap: "nowrap",
+};
+
+const followUploadMediaItemStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 8,
+  justifyItems: "start",
+};
+
+const followUploadMediaLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  color: "#64748b",
+  fontWeight: 400,
+};
+
+const followUploadSampleImageStyle: React.CSSProperties = {
+  width: 120,
+  height: 120,
+  borderRadius: 12,
+  objectFit: "cover",
+  cursor: "pointer",
+};
+
 const followUploadPickerStyle = (hasImage: boolean): React.CSSProperties => ({
-  height: 176,
+  width: 120,
+  height: 120,
   borderRadius: 14,
   border: "1px dashed rgba(148,163,184,0.58)",
   background: hasImage ? "#f8fafc" : "rgba(248,250,252,0.78)",
@@ -1700,8 +2231,7 @@ const followUploadPickerStyle = (hasImage: boolean): React.CSSProperties => ({
 
 const followUploadPickerTextStyle: React.CSSProperties = {
   fontSize: 13,
-  color: "#64748b",
-  fontWeight: 700,
+  color: "#64748b", fontWeight: 400,
 };
 
 const followUploadPreviewImageStyle: React.CSSProperties = {
@@ -1730,8 +2260,7 @@ const sceneIndexStyle = (accent: string): React.CSSProperties => ({
   justifyContent: "center",
   background: `${accent}1A`,
   color: accent,
-  fontSize: 12,
-  fontWeight: 900,
+  fontSize: 12, fontWeight: 400,
   flexShrink: 0,
 });
 
@@ -1767,8 +2296,7 @@ const sampleViewButtonStyle: React.CSSProperties = {
   border: "1px solid rgba(36,116,255,0.14)",
   background: "rgba(36,116,255,0.08)",
   color: "#2474ff",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
   cursor: "pointer",
   flexShrink: 0,
 };
@@ -1782,8 +2310,7 @@ const linkCopyButtonStyle: React.CSSProperties = {
   background: "transparent",
   padding: 0,
   color: "#0f172a",
-  fontSize: 12,
-  fontWeight: 700,
+  fontSize: 12, fontWeight: 400,
   cursor: "pointer",
   maxWidth: "100%",
 };
@@ -1795,8 +2322,7 @@ const sceneImagePreviewStyle: React.CSSProperties = {
   borderRadius: 18,
   background: "rgba(247,250,255,0.96)",
   color: "#64748b",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
 };
 
 const sceneImagePreviewHeadStyle: React.CSSProperties = {
@@ -1821,20 +2347,29 @@ const sceneRuleListStyle: React.CSSProperties = {
 };
 
 const sceneRuleItemStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: 6,
   fontSize: 14,
   lineHeight: 1.8,
-  color: "#475569",
-  fontWeight: 600,
+  color: "#475569", fontWeight: 400,
+};
+
+const sceneRuleIndexStyle: React.CSSProperties = {
+  minWidth: 16,
+  color: "#334155",
+  fontWeight: 500,
+  lineHeight: 1.8,
 };
 
 const sceneStepStyle: React.CSSProperties = {
   display: "grid",
   justifyItems: "center",
   alignContent: "start",
-  gap: 8,
-  minHeight: 140,
-  padding: "12px 10px 14px",
-  borderRadius: 22,
+  gap: 6,
+  minHeight: 118,
+  padding: "10px 8px 10px",
+  borderRadius: 18,
   background: "linear-gradient(180deg, rgba(248,250,252,0.98), rgba(255,255,255,0.96))",
   border: "1px solid rgba(226,232,240,0.82)",
   position: "relative",
@@ -1844,46 +2379,42 @@ const sceneStepStyle: React.CSSProperties = {
 const sceneStepsGridStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-  gap: 10,
+  gap: 8,
 };
 
 const sceneStepBadgeStyle = (accent: string): React.CSSProperties => ({
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  width: 36,
-  height: 36,
+  width: 32,
+  height: 32,
   borderRadius: 999,
   background: `linear-gradient(180deg, ${accent}, color-mix(in srgb, ${accent} 72%, white))`,
   color: "#fff",
-  fontSize: 12,
-  fontWeight: 900,
+  fontSize: 12, fontWeight: 400,
   boxShadow: `0 10px 20px color-mix(in srgb, ${accent} 22%, transparent)`,
 });
 
 const sceneStepConnectorStyle = (show: boolean): React.CSSProperties => ({
   position: "absolute",
-  top: 30,
-  left: "calc(50% + 28px)",
-  width: "calc(100% - 56px)",
+  top: 26,
+  left: "calc(50% + 24px)",
+  width: "calc(100% - 48px)",
   height: 2,
   borderRadius: 999,
   background: show ? "linear-gradient(90deg, rgba(36,116,255,0.22), rgba(36,116,255,0.06))" : "transparent",
 });
 
 const sceneStepTitleStyle: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 900,
+  fontSize: 12, fontWeight: 400,
   color: "#0f172a",
   lineHeight: 1.3,
   textAlign: "center",
 };
 
 const sceneStepDescStyle: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  color: "#64748b",
-  lineHeight: 1.6,
+  fontSize: 11, fontWeight: 400, color: "#64748b",
+  lineHeight: 1.45,
   textAlign: "center",
 };
 
@@ -1929,8 +2460,7 @@ const scenePreviewCloseStyle: React.CSSProperties = {
   border: "1px solid rgba(226,232,240,0.9)",
   background: "rgba(248,250,252,0.96)",
   color: "#475569",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
   cursor: "pointer",
 };
 
@@ -2091,9 +2621,9 @@ const taskHeroSparkStyle = ({
 const taskFilterShellStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-  gap: 8,
-  padding: 9,
-  borderRadius: 24,
+  gap: 6,
+  padding: 7,
+  borderRadius: 20,
   background: "rgba(255,255,255,0.92)",
   border: "1px solid rgba(232,239,249,0.98)",
   boxShadow: "0 16px 40px rgba(112, 135, 176, 0.10)",
@@ -2102,18 +2632,18 @@ const taskFilterShellStyle: React.CSSProperties = {
 const taskFilterButtonStyle = (active: boolean, label: keyof typeof TASK_STATUS_META): React.CSSProperties => {
   const meta = TASK_STATUS_META[label];
   return {
-    height: 50,
-    borderRadius: 16,
+    height: 44,
+    borderRadius: 14,
     border: active ? `1.5px solid ${meta.border}` : "1px solid transparent",
     background: active ? "rgba(244,251,245,0.98)" : "rgba(245,248,253,0.92)",
     boxShadow: active ? "0 8px 22px rgba(34,197,94,0.10)" : "none",
     color: active ? meta.text : "#4b5f7d",
-    fontSize: 15,
-    fontWeight: 800,
+    fontSize: 12,
+    fontWeight: 700,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
+    gap: 5,
     cursor: "pointer",
   };
 };
@@ -2141,9 +2671,9 @@ const taskListCardStyle: React.CSSProperties = {
 
 const taskListCardInnerStyle: React.CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "116px minmax(0, 1fr)",
-  gap: 12,
-  alignItems: "stretch",
+  gridTemplateColumns: "minmax(0, 1fr)",
+  gap: 10,
+  alignItems: "start",
 };
 
 const taskListImageWrapStyle: React.CSSProperties = {
@@ -2197,8 +2727,7 @@ const taskStatusChipStyle = (status: "进行中" | "未开始" | "已结束"): R
     borderRadius: 999,
     background: meta.soft,
     color: meta.text,
-    fontSize: 12,
-    fontWeight: 800,
+    fontSize: 12, fontWeight: 400,
     lineHeight: 1,
   };
 };
@@ -2234,8 +2763,7 @@ const taskListDatePillStyle: React.CSSProperties = {
   borderRadius: 999,
   background: "rgba(244,247,252,0.98)",
   color: "#7a88a3",
-  fontSize: 11,
-  fontWeight: 700,
+  fontSize: 11, fontWeight: 400,
   display: "inline-flex",
   alignItems: "center",
   gap: 6,
@@ -2248,8 +2776,7 @@ const taskListMetaRowStyle: React.CSSProperties = {
   justifyContent: "space-between",
   gap: 10,
   color: "#74839f",
-  fontSize: 12,
-  fontWeight: 700,
+  fontSize: 12, fontWeight: 400,
 };
 
 const taskListMetaItemStyle: React.CSSProperties = {
@@ -2263,7 +2790,7 @@ const taskListFloatingDockStyle: React.CSSProperties = {
   position: "fixed",
   left: "50%",
   transform: "translateX(-50%)",
-  width: "min(calc(100vw - 20px), 500px)",
+  width: "var(--h5-screen-width)",
   bottom: 80,
   zIndex: 26,
   pointerEvents: "none",
@@ -2322,8 +2849,7 @@ const floatingButtonStyle: React.CSSProperties = {
   background: "linear-gradient(135deg, rgba(37,99,235,0.96), rgba(59,130,246,0.92))",
   boxShadow: "0 14px 30px rgba(37,99,235,0.32), inset 0 1px 0 rgba(255,255,255,0.28)",
   backdropFilter: "blur(8px)",
-  fontSize: 11,
-  fontWeight: 800,
+  fontSize: 11, fontWeight: 400,
   cursor: "pointer",
   zIndex: 26,
 };
@@ -2332,7 +2858,7 @@ const floatingDockStyle: React.CSSProperties = {
   position: "fixed",
   left: "50%",
   transform: "translateX(-50%)",
-  width: "min(calc(100vw - 20px), 500px)",
+  width: "var(--h5-screen-width)",
   bottom: 86,
   zIndex: 26,
   pointerEvents: "none",
@@ -2367,7 +2893,7 @@ const detailSubmitDockStyle: React.CSSProperties = {
   position: "fixed",
   left: "50%",
   transform: "translateX(-50%)",
-  width: "min(calc(100vw - 20px), 500px)",
+  width: "var(--h5-screen-width)",
   bottom: 0,
   zIndex: 24,
   padding: "0 10px 10px",
@@ -2399,7 +2925,7 @@ const detailSubscribeDockStyle: React.CSSProperties = {
   position: "fixed",
   left: "50%",
   transform: "translateX(-50%)",
-  width: "min(calc(100vw - 20px), 500px)",
+  width: "var(--h5-screen-width)",
   bottom: 0,
   zIndex: 24,
   padding: "0 10px 10px",
@@ -2445,8 +2971,8 @@ const rankingBackdropStyle: React.CSSProperties = {
 };
 
 const rankingSheetStyle: React.CSSProperties = {
-  width: "calc(100% - 20px)",
-  maxWidth: 500,
+  width: "calc(var(--h5-screen-width) - 20px)",
+  maxWidth: "calc(var(--h5-screen-width) - 20px)",
   margin: "0 auto",
   background: "#fff",
   borderRadius: "24px 24px 0 0",
@@ -2469,8 +2995,7 @@ const rankingCloseButtonStyle: React.CSSProperties = {
   borderRadius: 999,
   background: "rgba(241,245,249,0.95)",
   color: "#475569",
-  fontSize: 12,
-  fontWeight: 700,
+  fontSize: 12, fontWeight: 400,
   cursor: "pointer",
   flexShrink: 0,
 };
@@ -2503,8 +3028,7 @@ const rankingRankStyle = (index: number): React.CSSProperties => ({
   background:
     index === 0 ? "linear-gradient(135deg, #f59e0b, #facc15)" : index === 1 ? "linear-gradient(135deg, #94a3b8, #cbd5e1)" : index === 2 ? "linear-gradient(135deg, #f97316, #fb7185)" : "rgba(36,116,255,0.10)",
   color: index < 3 ? "#fff" : "#2474ff",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: 12, fontWeight: 400,
   flexShrink: 0,
 });
 

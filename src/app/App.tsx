@@ -9,8 +9,16 @@ export default function App() {
       <RouterProvider router={router} />
       <Toaster
         position="top-center"
-        offset="42vh"
+        offset="38vh"
         richColors
+        style={{
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "min(calc(100vw - 20px), 500px)",
+          display: "flex",
+          justifyContent: "center",
+          pointerEvents: "none",
+        }}
         toastOptions={{
           style: {
             borderRadius: 16,
@@ -18,7 +26,8 @@ export default function App() {
             padding: '10px 14px',
             width: 'fit-content',
             minWidth: 0,
-            maxWidth: '140px',
+            maxWidth: '220px',
+            pointerEvents: "auto",
           },
         }}
       />

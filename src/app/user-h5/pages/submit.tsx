@@ -2,12 +2,12 @@ import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useUserH5 } from "../state";
 import { Card, Container, SectionTitle } from "../shared";
-import { PlatformBadge } from "../../components/platform/PlatformBadge";
+import { PlatformLogo } from "../../components/platform/PlatformBadge";
 
 function InputField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
     <label style={{ display: "grid", gap: 6 }}>
-      <span style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>{label}</span>
+      <span style={{ fontSize: 12, color: "#64748b", fontWeight: 400 }}>{label}</span>
       <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={4} style={{ ...inputStyle, height: "auto", padding: 14, resize: "vertical" }} />
     </label>
   );
@@ -81,12 +81,10 @@ export function SubmitPage() {
   const account = accounts.find((item) => item.platform === platform);
   const followTargets = task.followTargets ?? [];
   const engagementPlatform = task.engagementPlatform ?? task.platform[0] ?? "小红书";
-  const engagementAccount = accounts.find((item) => item.platform === engagementPlatform);
   const followSubmitPlatform =
     followTargets.find((target) => accounts.some((item) => item.platform === target.platform))?.platform ??
     followTargets[0]?.platform ??
     platform;
-  const followAccount = accounts.find((item) => item.platform === followSubmitPlatform);
   const submissionRules = [
     "内容链接必须公开可访问",
     "同一链接不能重复提交",
@@ -119,11 +117,6 @@ export function SubmitPage() {
       setFeedback("请为每个需关注账号上传一张关注截图。");
       return;
     }
-    if (!followAccount) {
-      setFeedback(`请先完成 ${followSubmitPlatform} 账号认证，再提交关注凭证。`);
-      return;
-    }
-
     const result = submitContent({
       taskId: task.id,
       platform: followSubmitPlatform,
@@ -131,7 +124,7 @@ export function SubmitPage() {
       contentUrl: `https://proof.local/follow/${task.id}/${Date.now()}`,
       contentPreview: followProofNote || task.proofDescription || "已按要求关注指定账号并提交截图凭证。",
       publishTime: new Date().toLocaleString("zh-CN", { hour12: false }),
-      accountHandle: followAccount.accountHandle,
+      accountHandle: "系统提交",
     });
     setFeedback(result.message);
     if (result.ok) navigate("/submissions");
@@ -142,11 +135,6 @@ export function SubmitPage() {
       setFeedback("请上传一张互动完成截图。");
       return;
     }
-    if (!engagementAccount) {
-      setFeedback(`请先完成 ${engagementPlatform} 账号认证，再提交互动凭证。`);
-      return;
-    }
-
     const result = submitContent({
       taskId: task.id,
       platform: engagementPlatform,
@@ -154,7 +142,7 @@ export function SubmitPage() {
       contentUrl: `https://proof.local/engagement/${task.id}/${Date.now()}`,
       contentPreview: engagementProofNote || task.engagementProofDescription || "已按要求完成互动并提交截图凭证。",
       publishTime: new Date().toLocaleString("zh-CN", { hour12: false }),
-      accountHandle: engagementAccount.accountHandle,
+      accountHandle: "系统提交",
     });
     setFeedback(result.message);
     if (result.ok) navigate("/submissions");
@@ -182,7 +170,7 @@ export function SubmitPage() {
                 <div key={`${target.platform}-${target.account}-${index}`} style={proofTargetStyle}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                     <div style={{ display: "grid", gap: 6 }}>
-                      <PlatformBadge platform={target.platform} size={13} style={{ width: "fit-content" }} />
+                      <PlatformLogo platform={target.platform} size={16} />
                       <div style={proofTargetTitleStyle}>{target.account}</div>
                     </div>
                     {target.sampleImage && <img src={target.sampleImage} alt="示例图" style={sampleMiniStyle} />}
@@ -230,7 +218,7 @@ export function SubmitPage() {
             <div style={{ display: "grid", gap: 10 }}>
               <div style={compactInfoStyle}>
                 <span>互动平台</span>
-                <PlatformBadge platform={engagementPlatform} size={13} />
+                <PlatformLogo platform={engagementPlatform} size={16} />
               </div>
               <div style={compactInfoStyle}>
                 <span>内容链接</span>
@@ -280,7 +268,7 @@ export function SubmitPage() {
                 <div style={heroTaskTitleStyle}>{task.name}</div>
               </div>
               <div style={heroMetaRowStyle}>
-                <PlatformBadge platform={platform} />
+                <PlatformLogo platform={platform} size={16} />
               </div>
             </div>
           </div>
@@ -288,7 +276,7 @@ export function SubmitPage() {
           <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
             <InputField label="内容链接" value={contentUrl} onChange={setContentUrl} />
             <label style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontSize: 12, color: "#64748b", fontWeight: 700 }}>内容摘要</span>
+              <span style={{ fontSize: 12, color: "#64748b", fontWeight: 400 }}>内容摘要</span>
               <textarea value={contentPreview} onChange={(e) => setContentPreview(e.target.value)} rows={4} style={{ ...inputStyle, height: "auto", padding: 14, resize: "vertical" }} />
             </label>
           </div>
@@ -351,8 +339,7 @@ const uploadPreviewStyle: React.CSSProperties = {
 };
 const uploadEmptyStyle: React.CSSProperties = {
   color: "#64748b",
-  fontSize: 13,
-  fontWeight: 800,
+  fontSize: 13, fontWeight: 400,
   lineHeight: 1.7,
   textAlign: "center",
 };
@@ -377,8 +364,7 @@ const sceneSubmitDescStyle: React.CSSProperties = {
   marginTop: 8,
   fontSize: 12,
   lineHeight: 1.6,
-  color: "#64748b",
-  fontWeight: 700,
+  color: "#64748b", fontWeight: 400,
 };
 const proofTargetStyle: React.CSSProperties = {
   padding: 12,
@@ -417,8 +403,7 @@ const compactInfoStyle: React.CSSProperties = {
   borderRadius: 16,
   background: "rgba(248,250,252,0.96)",
   color: "#64748b",
-  fontSize: 13,
-  fontWeight: 800,
+  fontSize: 13, fontWeight: 400,
 };
 const actionRowStyle: React.CSSProperties = {
   display: "flex",
@@ -430,8 +415,7 @@ const actionTagStyle: React.CSSProperties = {
   borderRadius: 999,
   background: "rgba(36,116,255,0.10)",
   color: "#2474ff",
-  fontSize: 13,
-  fontWeight: 900,
+  fontSize: 13, fontWeight: 400,
 };
 const engagementSampleStyle: React.CSSProperties = {
   width: 118,
@@ -458,7 +442,7 @@ const fixedSubmitBarWrapStyle: React.CSSProperties = {
   left: "50%",
   bottom: 16,
   transform: "translateX(-50%)",
-  width: "min(calc(100vw - 20px), 500px)",
+  width: "var(--h5-screen-width)",
   padding: "0 16px calc(env(safe-area-inset-bottom, 0px) + 0px) 16px",
   boxSizing: "border-box",
   zIndex: 20,
@@ -512,8 +496,7 @@ const heroSourceLabelStyle: React.CSSProperties = {
   borderRadius: 999,
   background: "rgba(36,116,255,0.10)",
   color: "#2474ff",
-  fontSize: 11,
-  fontWeight: 800,
+  fontSize: 11, fontWeight: 400,
   letterSpacing: "0.02em",
 };
 const heroTaskTitleStyle: React.CSSProperties = {
@@ -546,8 +529,7 @@ const ruleBoardHeaderStyle: React.CSSProperties = {
   marginBottom: 12,
 };
 const ruleBoardHeaderTitleStyle: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 900,
+  fontSize: 13, fontWeight: 400,
   color: "#0f172a",
 };
 const ruleBoardHeaderDescStyle: React.CSSProperties = {
@@ -577,8 +559,7 @@ const ruleBoardIndexStyle: React.CSSProperties = {
   justifyContent: "center",
   background: "rgba(36,116,255,0.10)",
   color: "#2474ff",
-  fontSize: 11,
-  fontWeight: 900,
+  fontSize: 11, fontWeight: 400,
   flexShrink: 0,
 };
 const ruleBoardTextStyle: React.CSSProperties = {
