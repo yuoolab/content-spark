@@ -26,10 +26,11 @@ import {
 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { useUserH5 } from "../state";
 import type { Platform, Task, TaskRewardSpec } from "../state";
-import { Card, Container, Pill, SectionTitle, fmtNumber } from "../shared";
+import { Card, Container, Pill, fmtNumber } from "../shared";
 import { PlatformLogo } from "../../components/platform/PlatformBadge";
 
 type DetailScene = NonNullable<Task["scene"]>;
@@ -37,6 +38,7 @@ type FollowProofStatus = "待完成" | "已完成" | "审核中" | "已拒绝";
 type FollowProofState = { status: FollowProofStatus; rejectReason?: string; proofUrl?: string };
 type RewardPreviewKind = "points" | "gift" | "cash";
 type EngagementSubmitPreviewState = "pending" | "reviewing" | "rejected" | "approved";
+type ActivityStatusPreviewState = "未开始" | "进行中" | "已结束";
 
 const formatTaskRange = (startDate: string, endDate: string) =>
   `${startDate.split("-").join("/")} 至 ${endDate.split("-").join("/")}`;
@@ -65,8 +67,8 @@ const GIFT_IMAGES: Record<string, string> = {
 
 const TASK_STATUS_META = {
   全部: { icon: Grid2x2, accent: "#22c55e", soft: "rgba(34,197,94,0.10)", border: "rgba(34,197,94,0.55)", text: "#16a34a" },
-  进行中: { icon: PlayCircle, accent: "#22c55e", soft: "rgba(34,197,94,0.10)", border: "rgba(34,197,94,0.18)", text: "#16a34a" },
   未开始: { icon: Clock3, accent: "#f59e0b", soft: "rgba(245,158,11,0.10)", border: "rgba(245,158,11,0.18)", text: "#f59e0b" },
+  进行中: { icon: PlayCircle, accent: "#22c55e", soft: "rgba(34,197,94,0.10)", border: "rgba(34,197,94,0.18)", text: "#16a34a" },
   已结束: { icon: CheckCircle2, accent: "#94a3b8", soft: "rgba(148,163,184,0.12)", border: "rgba(203,213,225,0.85)", text: "#64748b" },
 } as const;
 
@@ -101,11 +103,23 @@ const colorAlpha = (hex: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+function DetailCardTitle({ title, extra }: { title: string; extra?: ReactNode }) {
+  return (
+    <div style={detailCardTitleRowStyle}>
+      <div style={detailCardTitleMainStyle}>
+        <span style={detailCardTitleAccentStyle} />
+        <span>{title}</span>
+      </div>
+      {extra}
+    </div>
+  );
+}
+
 export function TaskListPage() {
   const { tasks } = useUserH5();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"全部" | "进行中" | "未开始" | "已结束">("全部");
-  const filters: Array<"全部" | "进行中" | "未开始" | "已结束"> = ["全部", "进行中", "未开始", "已结束"];
+  const [status, setStatus] = useState<"全部" | "未开始" | "进行中" | "已结束">("全部");
+  const filters: Array<"全部" | "进行中" | "未开始" | "已结束"> = ["全部", "未开始", "进行中", "已结束"];
 
   const filtered = useMemo(
     () =>
@@ -208,12 +222,7 @@ export function TaskListPage() {
                       <span style={{ color: "#60708c", fontWeight: 700 }}>{formatTaskRange(task.startDate, task.endDate)}</span>
                     </div>
 
-                    <div style={taskListMetaRowStyle}>
-                      <div style={taskListMetaItemStyle}>
-                        <Users size={15} color="#74839f" />
-                        <span>参与人数 {fmtNumber(task.participants)}</span>
-                      </div>
-                    </div>
+                    <div style={taskListMetaRowStyle} />
                   </div>
                 </div>
               </button>
@@ -313,6 +322,13 @@ export function TaskDetailPage() {
     previewSubmitStateParam === "approved"
       ? previewSubmitStateParam
       : "pending";
+  const previewActivityStatusParam = searchParams.get("activityStatus");
+  const previewActivityStatus: ActivityStatusPreviewState =
+    previewActivityStatusParam === "upcoming"
+      ? "未开始"
+      : previewActivityStatusParam === "finished"
+      ? "已结束"
+      : "进行中";
 
   return (
     <SceneTaskDetail
@@ -321,6 +337,7 @@ export function TaskDetailPage() {
       rankingEntries={rankingEntries}
       previewRewardKind={previewRewardKind}
       previewSubmitState={previewSubmitState}
+      previewActivityStatus={previewActivityStatus}
       accounts={accounts}
       submitContent={submitContent}
       startReminderSubscribed={startReminderSubscribed}
@@ -335,6 +352,7 @@ function SceneTaskDetail({
   rankingEntries,
   previewRewardKind,
   previewSubmitState,
+  previewActivityStatus,
   accounts,
   submitContent,
   startReminderSubscribed,
@@ -351,6 +369,7 @@ function SceneTaskDetail({
   }>;
   previewRewardKind: RewardPreviewKind;
   previewSubmitState: EngagementSubmitPreviewState;
+  previewActivityStatus: ActivityStatusPreviewState;
   accounts: Array<{ platform: Platform; accountHandle: string }>;
   submitContent: (payload: {
     taskId: string;
@@ -376,6 +395,7 @@ function SceneTaskDetail({
   });
   const [followUploadSheet, setFollowUploadSheet] = useState<{ index: number; fileUrl: string } | null>(null);
   const [engagementUploadSheet, setEngagementUploadSheet] = useState<{ fileUrls: string[] } | null>(null);
+  const [seedingSubmitSheet, setSeedingSubmitSheet] = useState<{ contentUrl: string; contentPreview: string } | null>(null);
   const meta = getDetailSceneMeta(scene);
   const targets = task.followTargets ?? [];
   const actions = task.engagementActions ?? [];
@@ -387,6 +407,9 @@ function SceneTaskDetail({
   const sceneSteps = getSceneSteps(scene);
   const hasLeaderboard = scene === "engagement_reward" && rankingEntries.length > 0;
   const submitButtonText = scene === "follow" || scene === "engagement" ? "去提交凭证" : "去提交内容";
+  const displayStatus = scene === "follow" || scene === "engagement" ? previewActivityStatus : task.status;
+  const isTaskUpcoming = displayStatus === "未开始";
+  const useInlineSeedingSubmit = scene === "seeding" && task.name === "春季新品种草计划";
   const engagementSubmitMeta =
     previewSubmitState === "reviewing"
       ? { label: "审核中", disabled: true, tone: "rgba(59,130,246,0.9)", showArrow: false }
@@ -455,6 +478,12 @@ function SceneTaskDetail({
   const activeFollowState = followUploadSheet ? followProofStates[followUploadSheet.index] : undefined;
   const openEngagementUploadSheet = () => setEngagementUploadSheet({ fileUrls: [] });
   const closeEngagementUploadSheet = () => setEngagementUploadSheet(null);
+  const openSeedingSubmitSheet = () =>
+    setSeedingSubmitSheet({
+      contentUrl: "https://www.xiaohongshu.com/explore/demo-submit",
+      contentPreview: task.description || "",
+    });
+  const closeSeedingSubmitSheet = () => setSeedingSubmitSheet(null);
 
   const handleSubmitEngagementProof = () => {
     if (scene !== "engagement") return;
@@ -479,6 +508,33 @@ function SceneTaskDetail({
     toast.error(result.message);
   };
 
+  const handleSubmitSeedingContent = () => {
+    if (scene !== "seeding" || !seedingSubmitSheet) return;
+    if (!seedingSubmitSheet.contentUrl.trim()) {
+      toast.error("请填写内容链接");
+      return;
+    }
+    if (!seedingSubmitSheet.contentPreview.trim()) {
+      toast.error("请填写内容摘要");
+      return;
+    }
+    const result = submitContent({
+      taskId: task.id,
+      platform: task.platform[0] ?? "小红书",
+      title: `${task.name}｜内容提交`,
+      contentUrl: seedingSubmitSheet.contentUrl.trim(),
+      contentPreview: seedingSubmitSheet.contentPreview.trim(),
+      publishTime: new Date().toLocaleString("zh-CN", { hour12: false }),
+      accountHandle: "系统提交",
+    });
+    if (result.ok) {
+      setSeedingSubmitSheet(null);
+      toast.success("内容已提交，等待审核");
+      return;
+    }
+    toast.error(result.message);
+  };
+
   return (
     <Container>
       <div style={{ position: "relative" }}>
@@ -486,7 +542,7 @@ function SceneTaskDetail({
         <>
           <section style={followHeroShellStyle}>
             <h1 style={{ ...followHeroTitleStyle, display: "flex", alignItems: "center", gap: 8 }}>
-              <Pill tone={task.status === "进行中" ? "green" : task.status === "未开始" ? "orange" : "gray"}>{task.status}</Pill>
+              <Pill tone={displayStatus === "进行中" ? "green" : displayStatus === "未开始" ? "orange" : "gray"}>{displayStatus}</Pill>
               {task.name}
             </h1>
             <div style={followHeroDescStyle}>{meta.description}</div>
@@ -495,15 +551,11 @@ function SceneTaskDetail({
                 <CalendarDays size={13} />
                 {formatTaskRange(task.startDate, task.endDate)}
               </span>
-              <span style={detailHeroMetaPillStyle}>
-                <Users size={13} />
-                {fmtNumber(task.participants)} 人参与
-              </span>
             </div>
           </section>
 
           <Card style={{ padding: 14, borderRadius: 22, border: "1px solid rgba(218,228,242,0.95)" }}>
-            <SectionTitle title={scene === "engagement" ? "参与步骤" : "任务速览"} />
+            <DetailCardTitle title="任务速览" />
             {scene === "follow" ? (
               <div style={followStepListStyle}>
                 {[
@@ -517,7 +569,7 @@ function SceneTaskDetail({
                       <div style={followStepItemStyle}>
                         <div style={followStepHeadStyle}>
                           <div style={followStepBadgeStyle(item.tone)}>
-                            <Icon size={13} color="#fff" />
+                            <Icon size={13} color="#334155" />
                             <span>{index + 1}</span>
                           </div>
                         </div>
@@ -528,7 +580,7 @@ function SceneTaskDetail({
                   );
                 })}
               </div>
-            ) : scene === "engagement" ? (
+            ) : (
               <div style={sceneStepsGridStyle}>
                 {sceneSteps.map((step, index) => (
                   <div key={step.title} style={sceneStepStyle}>
@@ -539,42 +591,13 @@ function SceneTaskDetail({
                   </div>
                 ))}
               </div>
-            ) : (
-              <div style={followOverviewGridStyle}>
-                {detailHighlights.map((item, index) => {
-                  const Icon = item.icon;
-                  const bg =
-                    index === 0
-                      ? "rgba(22,163,74,0.08)"
-                      : index === 1
-                      ? "rgba(59,130,246,0.08)"
-                      : "rgba(124,58,237,0.08)";
-                  const iconBg =
-                    index === 0
-                      ? "linear-gradient(145deg,#4ad6bc,#35c4a8)"
-                      : index === 1
-                      ? "linear-gradient(145deg,#63a8ff,#3f88ff)"
-                      : "linear-gradient(145deg,#a78bfa,#8b5cf6)";
-
-                  return (
-                    <div key={item.label} style={followOverviewItemStyle(bg)}>
-                      <div style={followOverviewIconStyle(iconBg)}><Icon size={16} color="#fff" /></div>
-                      <div style={detailHighlightLabelStyle}>{item.label}</div>
-                      <div style={followOverviewValueStyle}>{item.value}</div>
-                    </div>
-                  );
-                })}
-              </div>
             )}
           </Card>
         </>
 
         {scene === "follow" && (
           <Card style={followSectionCardStyle}>
-            <div style={followSectionHeaderStyle}>
-              <span style={followSectionAccentBarStyle} />
-              <span>关注账号清单</span>
-            </div>
+            <DetailCardTitle title="关注账号清单" />
             <div style={{ display: "grid", gap: 10 }}>
               {targets.map((target, index) => (
                 <div key={`${target.platform}-${target.account}-${index}`} style={followTargetCardStyle}>
@@ -597,11 +620,11 @@ function SceneTaskDetail({
                               <Copy size={14} />
                             </button>
                           </div>
-                          <span style={followStatusTagStyle(followState)}>{followState}</span>
+                          {!isTaskUpcoming ? <span style={followStatusTagStyle(followState)}>{followState}</span> : null}
                         </div>
                         <div style={followCardFooterStyle}>
                           <div style={detailSecondaryTextStyle}>请复制账号名称在对应平台搜索后关注，详情请看示例图。</div>
-                          {!hideUpload && (
+                          {!isTaskUpcoming && displayStatus !== "已结束" && !hideUpload && (
                             <button type="button" style={followProofUploadTriggerStyle(isRejected)} onClick={() => openFollowUploadSheet(index)}>
                               {isRejected ? "重新上传" : "上传截图"}
                             </button>
@@ -618,7 +641,7 @@ function SceneTaskDetail({
 
         {scene === "engagement" && (
           <Card style={{ padding: 14 }}>
-            <SectionTitle title="互动要求" />
+            <DetailCardTitle title="互动要求" />
             <div style={{ display: "grid", gap: 10 }}>
               <InfoRow
                 icon={BadgeCheck}
@@ -667,30 +690,42 @@ function SceneTaskDetail({
 
         {scene === "seeding" && (
           <Card style={{ padding: 14 }}>
-            <SectionTitle title="创作要求" />
+            <DetailCardTitle title="创作要求" />
             <div style={{ display: "grid", gap: 10 }}>
               <InfoRow icon={Globe} label="发布平台" value={task.platform.join(" / ")} />
-              <InfoRow icon={FileText} label="内容形式" value={task.contentType} />
-              <InfoRow icon={Send} label="投稿上限" value={`每人最多 ${task.maxPerUser} 条`} />
-              <div style={detailTagBoardStyle(meta.soft)}>
-                <div style={detailTagBoardLabelStyle}>必带话题</div>
-                <div style={detailTagWrapStyle}>
-                  {task.hashtags.map((tag) => (
-                    <span key={tag} style={detailTagStyle(meta.accent, meta.soft)}>{tag}</span>
+              <InfoRow icon={FileText} label="创作方向" value={task.contentType} />
+              <InfoRow icon={Send} label="奖励次数" value={`每人最多奖励 ${task.maxPerUser} 次`} />
+              <div style={sceneTagCopyRowStyle}>
+                <div style={sceneTagCopyRowHeadStyle}>
+                  <div style={sceneTagCopyRowTitleStyle}>
+                    <span style={sceneTagIconWrapStyle}><Hash size={14} color="#2474ff" /></span>
+                    <span>必带话题</span>
+                  </div>
+                  <button type="button" style={sceneTagCopyButtonStyle} onClick={() => void handleCopyText(task.hashtags.join("、"))}>
+                    <Copy size={13} />
+                  </button>
+                </div>
+                <div style={sceneTagWrapFlowStyle}>
+                  {(task.hashtags.length ? task.hashtags : ["无"]).map((tag) => (
+                    <span key={tag} style={sceneTagChipStyle}>{tag}</span>
                   ))}
                 </div>
               </div>
-              <div style={detailTagBoardStyle(meta.soft)}>
-                <div style={detailTagBoardLabelStyle}>推荐关键词</div>
-                <div style={detailTagWrapStyle}>
-                  {task.keywords.map((keyword) => (
-                    <span key={keyword} style={detailTagStyle(meta.accent, meta.soft)}>{keyword}</span>
+              <div style={sceneTagCopyRowStyle}>
+                <div style={sceneTagCopyRowHeadStyle}>
+                  <div style={sceneTagCopyRowTitleStyle}>
+                    <span style={sceneTagIconWrapStyle}><Target size={14} color="#2474ff" /></span>
+                    <span>必带关键词</span>
+                  </div>
+                  <button type="button" style={sceneTagCopyButtonStyle} onClick={() => void handleCopyText(task.keywords.join("、"))}>
+                    <Copy size={13} />
+                  </button>
+                </div>
+                <div style={sceneTagWrapFlowStyle}>
+                  {(task.keywords.length ? task.keywords : ["无"]).map((keyword) => (
+                    <span key={keyword} style={sceneTagChipStyle}>{keyword}</span>
                   ))}
                 </div>
-              </div>
-              <div style={detailBriefStyle(meta.soft)}>
-                <div style={detailBriefTitleStyle}>创作方向</div>
-                <div style={detailBriefTextStyle}>{task.description}</div>
               </div>
             </div>
           </Card>
@@ -699,10 +734,10 @@ function SceneTaskDetail({
         {scene === "engagement_reward" && (
           <>
             <Card style={{ padding: 14 }}>
-              <SectionTitle title="内容门槛" />
+              <DetailCardTitle title="内容门槛" />
               <div style={{ display: "grid", gap: 10 }}>
                 <InfoRow icon={Globe} label="发布平台" value={task.platform.join(" / ")} />
-                <InfoRow icon={FileText} label="内容形式" value={task.contentType} />
+                <InfoRow icon={FileText} label="创作方向" value={task.contentType} />
                 <InfoRow icon={Send} label="投稿上限" value={`每人最多 ${task.maxPerUser} 条`} />
                 <InfoRow icon={Hash} label="必带话题" value={task.hashtags.join("、") || "无"} />
                 <InfoRow icon={Target} label="内容关键词" value={task.keywords.join("、") || "无"} />
@@ -710,7 +745,7 @@ function SceneTaskDetail({
             </Card>
 
             <Card style={{ padding: 14 }}>
-              <SectionTitle title="效果追踪" />
+              <DetailCardTitle title="效果追踪" />
               <div style={{ display: "grid", gap: 10 }}>
                 <div style={detailBriefStyle(meta.soft)}>
                   <div style={detailBriefTitleStyle}>计奖逻辑</div>
@@ -745,18 +780,19 @@ function SceneTaskDetail({
 
         <Card style={scene === "follow" ? followSectionCardStyle : { padding: 14 }}>
           {scene === "follow" ? (
-            <div style={{ ...followSectionHeaderStyle, justifyContent: "space-between" }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <span style={followSectionAccentBarStyle} />
-                <span>奖励说明</span>
-              </div>
-              <button type="button" style={followRewardLinkButtonStyle} onClick={() => navigate("/rewards")}>
-                <span>查看奖励</span>
-                <ChevronRight size={14} />
-              </button>
-            </div>
+            <DetailCardTitle
+              title="奖励说明"
+              extra={
+                !isTaskUpcoming ? (
+                  <button type="button" style={followRewardLinkButtonStyle} onClick={() => navigate("/rewards")}>
+                    <span>查看奖励</span>
+                    <ChevronRight size={14} />
+                  </button>
+                ) : null
+              }
+            />
           ) : (
-            <SectionTitle title={scene === "engagement_reward" ? "奖励与计奖方式" : "奖励说明"} />
+            <DetailCardTitle title={scene === "engagement_reward" ? "奖励与计奖方式" : "奖励说明"} />
           )}
           <div style={{ display: "grid", gap: 10 }}>
             {task.rewardSpecs.map((spec) => (
@@ -773,12 +809,9 @@ function SceneTaskDetail({
 
         <Card style={{ padding: 14 }}>
           {scene === "follow" ? (
-            <div style={followSectionHeaderStyle}>
-              <span style={followSectionAccentBarStyle} />
-              <span>规则说明</span>
-            </div>
+            <DetailCardTitle title="规则说明" />
           ) : (
-            <SectionTitle title="规则说明" />
+            <DetailCardTitle title="规则说明" />
           )}
           <ol style={sceneRuleListStyle}>
             {sceneRules.map((item, index) => (
@@ -791,43 +824,27 @@ function SceneTaskDetail({
         </Card>
 
         {scene !== "follow" && scene !== "engagement" && (
-          <>
-            <Card style={{ padding: 14 }}>
-              <SectionTitle title="参与步骤" />
-              <div style={sceneStepsGridStyle}>
-                {sceneSteps.map((step, index) => (
-                  <div key={step.title} style={sceneStepStyle}>
-                    <div style={sceneStepConnectorStyle(index !== sceneSteps.length - 1)} />
-                    <div style={sceneStepBadgeStyle(meta.accent)}>{String(index + 1).padStart(2, "0")}</div>
-                    <div style={sceneStepTitleStyle}>{step.title}</div>
-                    <div style={sceneStepDescStyle}>{step.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card style={{ padding: 14 }}>
-              <SectionTitle title="参与提醒" />
-              <div style={{ display: "grid", gap: 10 }}>
-                <div style={detailTipCardStyle(meta.soft)}>
-                  <div style={detailTipTitleStyle}>{scene === "engagement" ? "按规则提交凭证" : "先完成账号认证"}</div>
-                  <div style={detailTipTextStyle}>
-                    {scene === "engagement"
-                      ? "内容互动任务可直接提交截图凭证，无需先完成账号认证。"
-                      : "提交内容时会校验平台认证状态，未绑定账号将无法提交。"}
-                  </div>
-                </div>
-                <div style={detailTipCardStyle(meta.soft)}>
-                  <div style={detailTipTitleStyle}>同一链接不可重复领奖</div>
-                  <div style={detailTipTextStyle}>系统会校验重复投稿、账号归属和内容状态，删除内容后奖励可能失效。</div>
+          <Card style={{ padding: 14 }}>
+            <DetailCardTitle title="参与提醒" />
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={detailTipCardStyle(meta.soft)}>
+                <div style={detailTipTitleStyle}>{scene === "engagement" ? "按规则提交凭证" : "先完成账号认证"}</div>
+                <div style={detailTipTextStyle}>
+                  {scene === "engagement"
+                    ? "内容互动任务可直接提交截图凭证，无需先完成账号认证。"
+                    : "提交内容时会校验平台认证状态，未绑定账号将无法提交。"}
                 </div>
               </div>
-            </Card>
-          </>
+              <div style={detailTipCardStyle(meta.soft)}>
+                <div style={detailTipTitleStyle}>同一链接不可重复领奖</div>
+                <div style={detailTipTextStyle}>系统会校验重复投稿、账号归属和内容状态，删除内容后奖励可能失效。</div>
+              </div>
+            </div>
+          </Card>
         )}
       </div>
 
-      {task.status !== "未开始" && (
+      {displayStatus !== "未开始" && scene !== "follow" && scene !== "engagement" && (
         <div style={floatingDockStyle}>
           <div style={floatingDockInnerStyle}>
             <button onClick={() => navigate("/submissions")} style={floatingButtonStyle}>
@@ -840,7 +857,7 @@ function SceneTaskDetail({
         </div>
       )}
 
-      {task.status === "进行中" && scene !== "follow" && (
+      {displayStatus === "进行中" && scene !== "follow" && (
         <div style={detailSubmitDockStyle}>
           <div style={detailSubmitInnerStyle}>
             <button
@@ -852,6 +869,10 @@ function SceneTaskDetail({
                     return;
                   }
                   openEngagementUploadSheet();
+                  return;
+                }
+                if (useInlineSeedingSubmit) {
+                  openSeedingSubmitSheet();
                   return;
                 }
                 navigate(`/submit?taskId=${task.id}`);
@@ -876,7 +897,7 @@ function SceneTaskDetail({
         </div>
       )}
 
-      {task.status === "未开始" && (
+      {displayStatus === "未开始" && scene !== "follow" && scene !== "engagement" && (
         <div style={detailSubscribeDockStyle}>
           <div style={detailSubscribeInnerStyle}>
             <div style={{ display: "grid", gap: 8, width: "100%" }}>
@@ -889,7 +910,7 @@ function SceneTaskDetail({
         </div>
       )}
 
-      {task.status === "已结束" && hasLeaderboard && (
+      {displayStatus === "已结束" && hasLeaderboard && (
         <div style={detailSubmitDockStyle}>
           <div style={detailSubmitInnerStyle}>
             <button onClick={() => setShowRankingSheet(true)} style={{ ...detailSubmitButtonStyle, background: meta.accent }}>
@@ -1060,6 +1081,44 @@ function SceneTaskDetail({
         </div>
       )}
 
+      {seedingSubmitSheet && useInlineSeedingSubmit && (
+        <div style={followUploadBackdropStyle} onClick={closeSeedingSubmitSheet}>
+          <div style={followUploadSheetStyle} onClick={(event) => event.stopPropagation()}>
+            <div style={followUploadHeadStyle}>
+              <div style={followUploadTitleStyle}>提交内容</div>
+              <button type="button" onClick={closeSeedingSubmitSheet} style={followUploadCloseStyle}>
+                关闭
+              </button>
+            </div>
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={followUploadMediaLabelStyle}>内容链接</div>
+                <textarea
+                  value={seedingSubmitSheet.contentUrl}
+                  onChange={(event) =>
+                    setSeedingSubmitSheet((prev) => (prev ? { ...prev, contentUrl: event.target.value } : prev))
+                  }
+                  style={seedingSheetTextareaStyle}
+                />
+              </div>
+              <div style={{ display: "grid", gap: 6 }}>
+                <div style={followUploadMediaLabelStyle}>内容摘要</div>
+                <textarea
+                  value={seedingSubmitSheet.contentPreview}
+                  onChange={(event) =>
+                    setSeedingSubmitSheet((prev) => (prev ? { ...prev, contentPreview: event.target.value } : prev))
+                  }
+                  style={seedingSheetTextareaStyle}
+                />
+              </div>
+            </div>
+            <button type="button" style={followUploadSubmitInSheetStyle} onClick={handleSubmitSeedingContent}>
+              提交内容
+            </button>
+          </div>
+        </div>
+      )}
+
       {previewImage && (
         <div style={scenePreviewBackdropStyle} onClick={() => setPreviewImage(null)}>
           <div style={scenePreviewSheetStyle} onClick={(event) => event.stopPropagation()}>
@@ -1194,8 +1253,8 @@ function getSceneSteps(scene: DetailScene) {
     return [
       { title: "打开内容", desc: "复制链接在浏览器打开" },
       { title: "完成互动", desc: "按要求完成互动动作" },
-      { title: "上传凭证", desc: "截图互动结果并上传提交" },
-      { title: "发放奖励", desc: "上传凭证审核通过发放奖励" },
+      { title: "上传凭证", desc: "上传互动截图" },
+      { title: "发放奖励", desc: "审核通过发放奖励" },
     ];
   }
 
@@ -1363,25 +1422,6 @@ function RewardSpecCard({ spec, previewRewardKind }: { spec: TaskRewardSpec; pre
                 {previewAmountText}
               </span>
             ) : null}
-          </div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-            {!!spec.lotteryChances && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 6,
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  background: "rgba(250,173,20,0.14)",
-                  color: "#b45309",
-                  fontSize: 12, fontWeight: 400,
-                  whiteSpace: "nowrap",
-                }}
-              >
-                抽奖机会 {spec.lotteryChances} 次
-              </span>
-            )}
           </div>
         </div>
       )}
@@ -2101,15 +2141,28 @@ const followSectionCardStyle: React.CSSProperties = {
   boxShadow: "0 10px 28px rgba(148,173,211,0.12)",
 };
 
-const followSectionHeaderStyle: React.CSSProperties = {
+const detailCardTitleRowStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
-  justifyContent: "flex-start",
-  gap: 8,
+  justifyContent: "space-between",
   marginBottom: 12,
+};
+
+const detailCardTitleMainStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
   fontSize: 40 / 3,
   color: "#0f172a",
   fontWeight: 900,
+};
+
+const detailCardTitleAccentStyle: React.CSSProperties = {
+  width: 4,
+  height: 22,
+  borderRadius: 999,
+  background: "linear-gradient(180deg,#69e5d7,#2cc4b0)",
+  flexShrink: 0,
 };
 
 const followRewardLinkButtonStyle: React.CSSProperties = {
@@ -2123,14 +2176,6 @@ const followRewardLinkButtonStyle: React.CSSProperties = {
   gap: 2,
   cursor: "pointer",
   padding: 0,
-};
-
-const followSectionAccentBarStyle: React.CSSProperties = {
-  width: 4,
-  height: 22,
-  borderRadius: 999,
-  background: "linear-gradient(180deg,#69e5d7,#2cc4b0)",
-  flexShrink: 0,
 };
 
 const followUploadBackdropStyle: React.CSSProperties = {
@@ -2251,6 +2296,21 @@ const followUploadSubmitInSheetStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
+const seedingSheetTextareaStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 72,
+  borderRadius: 12,
+  border: "1px solid rgba(203,213,225,0.9)",
+  background: "#fff",
+  color: "#0f172a",
+  fontSize: 13,
+  lineHeight: 1.5,
+  padding: "10px 12px",
+  resize: "none",
+  boxSizing: "border-box",
+  outline: "none",
+};
+
 const sceneIndexStyle = (accent: string): React.CSSProperties => ({
   width: 28,
   height: 28,
@@ -2323,6 +2383,76 @@ const sceneImagePreviewStyle: React.CSSProperties = {
   background: "rgba(247,250,255,0.96)",
   color: "#64748b",
   fontSize: 12, fontWeight: 400,
+};
+
+const sceneTagCopyRowStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 8,
+  padding: 12,
+  borderRadius: 16,
+  border: "1px solid rgba(226,232,240,0.88)",
+  background: "rgba(247,250,255,0.96)",
+};
+
+const sceneTagCopyRowHeadStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+};
+
+const sceneTagCopyRowTitleStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  fontSize: 13,
+  color: "#64748b",
+  fontWeight: 500,
+};
+
+const sceneTagIconWrapStyle: React.CSSProperties = {
+  width: 28,
+  height: 28,
+  borderRadius: 999,
+  background: "rgba(36,116,255,0.10)",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flexShrink: 0,
+};
+
+const sceneTagCopyButtonStyle: React.CSSProperties = {
+  border: "none",
+  background: "transparent",
+  color: "#2474ff",
+  fontSize: 12,
+  fontWeight: 500,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  cursor: "pointer",
+  padding: 0,
+};
+
+const sceneTagWrapFlowStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  flexWrap: "wrap",
+};
+
+const sceneTagChipStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  height: 28,
+  padding: "0 10px",
+  borderRadius: 999,
+  border: "1px solid rgba(191,219,254,0.95)",
+  background: "rgba(239,246,255,0.84)",
+  color: "#1d4ed8",
+  fontSize: 12,
+  fontWeight: 500,
+  whiteSpace: "nowrap",
 };
 
 const sceneImagePreviewHeadStyle: React.CSSProperties = {

@@ -144,6 +144,7 @@ export function TaskCreate() {
   });
   const [formData, setFormData] = useState({
     name: '',
+    taskDescription: '',
     startDate: '',
     endDate: '',
     rewardType: 'points' as RewardType,
@@ -301,10 +302,25 @@ export function TaskCreate() {
                     value={formData.name}
                     onChange={(event) => setFormData({ ...formData, name: event.target.value })}
                     placeholder="请输入"
-                    maxLength={30}
+                    maxLength={20}
                     style={{ ...inputStyle(showValidation && !formData.name.trim()), paddingRight: 48, width: '100%' }}
                   />
-                  <span style={{ position: 'absolute', right: 10, bottom: 7, fontSize: 11, color: '#9aa4b2', pointerEvents: 'none' }}>{formData.name.length}/30</span>
+                  <span style={{ position: 'absolute', right: 10, bottom: 7, fontSize: 11, color: '#9aa4b2', pointerEvents: 'none' }}>{formData.name.length}/20</span>
+                </div>
+              </Field>
+
+              <Field label="任务描述">
+                <div style={{ position: 'relative', width: 'min(540px, 100%)' }}>
+                  <input
+                    value={formData.taskDescription}
+                    onChange={(event) => setFormData({ ...formData, taskDescription: event.target.value })}
+                    placeholder="请输入任务描述"
+                    maxLength={50}
+                    style={{ ...baseInputStyle, paddingRight: 56, width: '100%' }}
+                  />
+                  <span style={{ position: 'absolute', right: 10, bottom: 7, fontSize: 11, color: '#9aa4b2', pointerEvents: 'none' }}>
+                    {formData.taskDescription.length}/50
+                  </span>
                 </div>
               </Field>
 
@@ -852,11 +868,11 @@ export function TaskCreate() {
                       })}
                     </div>
                   </Field>
-                  <Field label="引导文案">
+                  <Field label="创作方向">
                     <input
                       value={formData.engagementProofDescription}
                       onChange={(event) => setFormData({ ...formData, engagementProofDescription: event.target.value })}
-                      placeholder="例如：截图需清晰展示互动数据"
+                      placeholder="例如：围绕指定主题进行真实体验分享，突出核心卖点"
                       style={baseInputStyle}
                     />
                   </Field>
@@ -946,11 +962,11 @@ export function TaskCreate() {
                       })}
                     </div>
                   </Field>
-                  <Field label="引导文案">
+                  <Field label="创作方向">
                     <input
                       value={formData.seedingGuideText}
                       onChange={(event) => setFormData({ ...formData, seedingGuideText: event.target.value })}
-                      placeholder="请输入引导文案"
+                      placeholder="请输入创作方向"
                       style={baseInputStyle}
                     />
                   </Field>
@@ -1021,7 +1037,7 @@ export function TaskCreate() {
                   </Field>
                 )}
                 {scene === 'seeding' && (
-                  <Field label="奖励模式">
+                  <Field label="奖励次数">
                     <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
                       {[
                         { value: 'unlimited' as const, label: '每条内容都发放' },

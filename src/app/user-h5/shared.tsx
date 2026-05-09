@@ -1,8 +1,9 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
-import { ArrowLeft, LayoutDashboard, LayoutList, User } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, LayoutList, Share2, User } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { PageAnnotations } from "../components/annotations/PageAnnotations";
 import { useUserH5 } from "./state";
+import { toast } from "sonner";
 
 export const NAV_ITEMS = [
   { path: "/tasks", label: "任务", icon: LayoutList },
@@ -155,10 +156,13 @@ export function NavShell() {
 
   const showBottomNav = pathname === "/tasks" || pathname === "/account";
   const isSubPage = !showBottomNav;
+  const showShareButton = pathname.startsWith("/tasks/");
   const showGiftSwitcher = pathname.startsWith("/tasks/");
   const taskIdInPath = pathname.startsWith("/tasks/") ? pathname.split("/")[2] ?? "" : "";
   const activeTask = tasks.find((item) => item.id === taskIdInPath);
   const showSubmitStateSwitcher = pathname.startsWith("/tasks/") && activeTask?.scene === "engagement";
+  const showActivityStatusSwitcher =
+    pathname.startsWith("/tasks/") && (activeTask?.scene === "engagement" || activeTask?.scene === "follow");
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -166,6 +170,18 @@ export function NavShell() {
       return;
     }
     navigate("/tasks");
+  };
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: pageTitle || "任务详情", url: window.location.href });
+        return;
+      }
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("链接已复制");
+    } catch {
+      toast.error("分享失败，请稍后重试");
+    }
   };
 
   return (
@@ -312,7 +328,30 @@ export function NavShell() {
                     <div style={{ flex: 1, textAlign: "center", fontSize: 20, fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>
                       {pageTitle}
                     </div>
-                    <div style={{ width: 40, height: 40 }} />
+                    <div style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                      {showShareButton ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleShare()}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 12,
+                            border: "1px solid rgba(203,213,225,0.75)",
+                            background: "#fff",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 8px 18px rgba(15, 23, 42, 0.06)",
+                            cursor: "pointer",
+                          }}
+                          aria-label="分享任务"
+                          title="分享任务"
+                        >
+                          <Share2 size={17} color="#2474ff" />
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -410,13 +449,61 @@ export function NavShell() {
         </div>
       )}
 
+      {showActivityStatusSwitcher && (
+        <div
+          style={{
+            position: "fixed",
+            left: "calc(50% + (var(--h5-frame-width) / 2) + 12px)",
+            top: "calc(50% - 194px)",
+            transform: "translateY(-50%)",
+            zIndex: 22,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {[
+            { id: "upcoming", label: "未开始" },
+            { id: "ongoing", label: "进行中" },
+            { id: "finished", label: "已结束" },
+          ].map((item) => {
+            const active = new URLSearchParams(location.search).get("activityStatus") === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(location.search);
+                  next.set("activityStatus", item.id);
+                  navigate(`${pathname}?${next.toString()}`, { replace: true });
+                }}
+                style={{
+                  height: 30,
+                  minWidth: 64,
+                  padding: "0 10px",
+                  borderRadius: 999,
+                  border: active ? "1px solid rgba(36,116,255,0.34)" : "1px solid rgba(203,213,225,0.92)",
+                  background: active ? "rgba(36,116,255,0.10)" : "rgba(255,255,255,0.95)",
+                  color: active ? "#2474ff" : "#475569",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 8px 18px rgba(15,23,42,0.08)",
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {showSubmitStateSwitcher && (
         <div
           style={{
             position: "fixed",
             left: "calc(50% + (var(--h5-frame-width) / 2) + 12px)",
-            top: "calc(50% + 8px)",
-            transform: "translateY(-50%)",
+            bottom: "58px",
             zIndex: 22,
             display: "flex",
             flexDirection: "row",

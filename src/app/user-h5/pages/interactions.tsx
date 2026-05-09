@@ -106,14 +106,13 @@ export function SubmissionsPage() {
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
-                                gap: 8,
-                                padding: "4px 4px 4px 8px",
+                                gap: 0,
+                                padding: 0,
                                 borderRadius: 999,
-                                background: "rgba(255,243,217,0.95)",
-                                border: "1px solid rgba(250,173,20,0.18)",
+                                background: "transparent",
+                                border: "none",
                               }}
                             >
-                              <Pill tone="orange">抽奖机会 1</Pill>
                               <button
                                 type="button"
                                 onClick={(event) => {

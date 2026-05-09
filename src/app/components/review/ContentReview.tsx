@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   ExternalLink,
   Bot,
+  ChevronLeft,
+  ChevronRight,
   Check,
   X,
   CheckCircle,
@@ -91,6 +93,13 @@ const AVATAR_COLORS = [
 const REVIEWERS = ['王敏', '李晨', '赵琪', '周岩'] as const;
 
 const PAGE_SIZE = 10;
+const SCENE_PRIORITY: Record<NonNullable<Submission['scene']> | 'unknown', number> = {
+  follow: 0,
+  engagement: 1,
+  seeding: 2,
+  engagement_reward: 3,
+  unknown: 4,
+};
 
 function RejectModal({
   submission,
@@ -705,7 +714,7 @@ export function ContentReview() {
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [approveTarget, setApproveTarget] = useState<string | null>(null);
   const [reasonViewText, setReasonViewText] = useState<string | null>(null);
-  const [previewImage, setPreviewImage] = useState<{ src: string; title: string } | null>(null);
+  const [previewImageIndex, setPreviewImageIndex] = useState<number | null>(null);
   const [aiReviewOpen, setAiReviewOpen] = useState(false);
   const [aiReviewEnabled, setAiReviewEnabled] = useState(false);
   const [taskIdQuery, setTaskIdQuery] = useState('');
@@ -1099,38 +1108,45 @@ export function ContentReview() {
     setRejectTarget(null);
   };
 
-  const filteredSubmissions = submissions.filter((s) => {
-    const matchesFilter = s.status === filter;
+  const filteredSubmissions = submissions
+    .filter((s) => {
+      const matchesFilter = s.status === filter;
 
-    const taskIdQ = taskIdQuery.trim().toLowerCase();
-    const phoneQ = userPhoneQuery.trim().toLowerCase();
+      const taskIdQ = taskIdQuery.trim().toLowerCase();
+      const phoneQ = userPhoneQuery.trim().toLowerCase();
 
-    const matchesTaskId =
-      !taskIdQ || s.taskId.toLowerCase().includes(taskIdQ);
-    const matchesPhone =
-      !phoneQ || s.userPhone.toLowerCase().includes(phoneQ);
+      const matchesTaskId =
+        !taskIdQ || s.taskId.toLowerCase().includes(taskIdQ);
+      const matchesPhone =
+        !phoneQ || s.userPhone.toLowerCase().includes(phoneQ);
 
-    const publishDate = parseYMD(toYMD(s.publishTime));
-    const start = parseYMD(publishStart);
-    const end = parseYMD(publishEnd);
-    const matchesPublishRange =
-      (!start && !end) ||
-      (publishDate &&
-        (!start || publishDate >= start) &&
-        (!end || publishDate <= end));
+      const publishDate = parseYMD(toYMD(s.publishTime));
+      const start = parseYMD(publishStart);
+      const end = parseYMD(publishEnd);
+      const matchesPublishRange =
+        (!start && !end) ||
+        (publishDate &&
+          (!start || publishDate >= start) &&
+          (!end || publishDate <= end));
 
-    const matchesScene = !sceneFilter || s.scene === sceneFilter;
-    const matchesPlatform = !platformFilter || s.platform === platformFilter;
+      const matchesScene = !sceneFilter || s.scene === sceneFilter;
+      const matchesPlatform = !platformFilter || s.platform === platformFilter;
 
-    return (
-      matchesFilter &&
-      matchesTaskId &&
-      matchesScene &&
-      matchesPlatform &&
-      matchesPhone &&
-      matchesPublishRange
-    );
-  });
+      return (
+        matchesFilter &&
+        matchesTaskId &&
+        matchesScene &&
+        matchesPlatform &&
+        matchesPhone &&
+        matchesPublishRange
+      );
+    })
+    .sort((a, b) => {
+      const pa = SCENE_PRIORITY[a.scene ?? 'unknown'];
+      const pb = SCENE_PRIORITY[b.scene ?? 'unknown'];
+      if (pa !== pb) return pa - pb;
+      return b.submitTime.localeCompare(a.submitTime);
+    });
 
   const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -1138,6 +1154,9 @@ export function ContentReview() {
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE
   );
+  const previewImages = filteredSubmissions
+    .filter((item) => Boolean(item.taskImage))
+    .map((item) => ({ src: item.taskImage as string, title: item.taskName }));
 
   useEffect(() => {
     setPage((current) => Math.min(current, totalPages));
@@ -1691,16 +1710,48 @@ export function ContentReview() {
                     }}
                   >
                     {submission.taskImage ? (
-                      <img
-                        src={submission.taskImage}
-                        alt="任务图片"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          setPreviewImage({ src: submission.taskImage as string, title: submission.taskName });
-                        }}
-                        style={{ width: 72, height: 72, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)', cursor: 'pointer' }}
-                      />
+                      submission.scene === 'follow' ? (
+                        <img
+                          src={submission.taskImage}
+                          alt="任务图片"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const idx = previewImages.findIndex((item) => item.src === submission.taskImage && item.title === submission.taskName);
+                            setPreviewImageIndex(idx >= 0 ? idx : 0);
+                          }}
+                          style={{ width: 72, height: 72, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)', cursor: 'pointer' }}
+                        />
+                      ) : (
+                        <div style={{ position: 'relative', width: 78, height: 72 }}>
+                          {[2, 1, 0].map((layer) => (
+                            <img
+                              key={layer}
+                              src={submission.taskImage}
+                              alt="任务图片"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                const idx = previewImages.findIndex((item) => item.src === submission.taskImage && item.title === submission.taskName);
+                                setPreviewImageIndex(idx >= 0 ? idx : 0);
+                              }}
+                              style={{
+                                position: 'absolute',
+                                right: layer * 6,
+                                top: layer * 2,
+                                width: 66,
+                                height: 66,
+                                borderRadius: 8,
+                                objectFit: 'cover',
+                                border: '1px solid var(--border)',
+                                boxShadow: '0 4px 10px rgba(15,23,42,0.10)',
+                                cursor: 'pointer',
+                                background: '#fff',
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )
                     ) : (
                       <span style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>—</span>
                     )}
@@ -1727,7 +1778,7 @@ export function ContentReview() {
                             lineHeight: '1.4',
                           }}
                         >
-                          {submission.contentTitle}
+                          {submission.scene === 'follow' || submission.scene === 'engagement' ? '-' : submission.contentTitle}
                         </div>
                       </div>
                     </div>
@@ -2002,9 +2053,9 @@ export function ContentReview() {
           </div>
         )}
 
-        {previewImage && (
+        {previewImageIndex !== null && previewImages[previewImageIndex] && (
           <div
-            onClick={() => setPreviewImage(null)}
+            onClick={() => setPreviewImageIndex(null)}
             style={{
               position: 'fixed',
               inset: 0,
@@ -2041,10 +2092,10 @@ export function ContentReview() {
                   borderBottom: '1px solid rgba(148,163,184,0.22)',
                 }}
               >
-                <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>{previewImage.title}</span>
+                <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>{previewImages[previewImageIndex].title}</span>
                 <button
                   type="button"
-                  onClick={() => setPreviewImage(null)}
+                  onClick={() => setPreviewImageIndex(null)}
                   style={{
                     width: '28px',
                     height: '28px',
@@ -2064,17 +2115,58 @@ export function ContentReview() {
               <div
                 style={{
                   padding: '16px',
-                  display: 'flex',
+                  display: 'grid',
+                  gridTemplateColumns: '36px 1fr 36px',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  gap: '10px',
                   overflow: 'auto',
                 }}
               >
+                <button
+                  type="button"
+                  onClick={() => setPreviewImageIndex((idx) => (idx === null ? null : Math.max(0, idx - 1)))}
+                  disabled={previewImageIndex <= 0}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    border: '1px solid rgba(148,163,184,0.36)',
+                    background: previewImageIndex <= 0 ? 'rgba(148,163,184,0.2)' : 'transparent',
+                    color: '#e2e8f0',
+                    cursor: previewImageIndex <= 0 ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  aria-label="上一张"
+                >
+                  <ChevronLeft size={16} />
+                </button>
                 <img
-                  src={previewImage.src}
+                  src={previewImages[previewImageIndex].src}
                   alt="任务图片预览"
                   style={{ maxWidth: '100%', maxHeight: 'calc(88vh - 74px)', borderRadius: 8, objectFit: 'contain' }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setPreviewImageIndex((idx) => (idx === null ? null : Math.min(previewImages.length - 1, idx + 1)))}
+                  disabled={previewImageIndex >= previewImages.length - 1}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 999,
+                    border: '1px solid rgba(148,163,184,0.36)',
+                    background: previewImageIndex >= previewImages.length - 1 ? 'rgba(148,163,184,0.2)' : 'transparent',
+                    color: '#e2e8f0',
+                    cursor: previewImageIndex >= previewImages.length - 1 ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  aria-label="下一张"
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
             </div>
           </div>
