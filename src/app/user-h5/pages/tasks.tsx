@@ -660,7 +660,23 @@ function SceneTaskDetail({
               />
               <InfoRow icon={ThumbsUp} label="互动动作" value={actions.join("、")} />
               {hasComment && task.commentKeyword && (
-                <InfoRow icon={MessageCircle} label="评论关键词" value={task.commentKeyword} />
+                <InfoRow
+                  icon={MessageCircle}
+                  label="评论关键词"
+                  value={
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <span>{task.commentKeyword}</span>
+                      <button
+                        type="button"
+                        onClick={() => void handleCopyText(task.commentKeyword ?? "", "评论关键词")}
+                        style={{ border: "none", background: "transparent", padding: 0, color: "#2474ff", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                        aria-label="复制评论关键词"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </span>
+                  }
+                />
               )}
               {task.engagementSampleImage && (
                 <div
