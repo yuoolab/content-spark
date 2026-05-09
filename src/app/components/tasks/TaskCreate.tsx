@@ -541,17 +541,43 @@ export function TaskCreate() {
                 <SceneFields>
                   <Field label="场景功能">
                     <div style={{ display: 'grid', gap: 10, width: 'min(720px, 100%)' }}>
-                      <div style={{ position: 'relative', width: '100%' }}>
-                        <textarea
-                          value={formData.followPlaybookDescription}
-                          onChange={(event) => setFormData({ ...formData, followPlaybookDescription: event.target.value })}
-                          placeholder="说明这个账号加粉玩法是做什么的、用户该怎么参与（例如：关注指定账号并上传截图，审核通过后发放奖励）。"
-                          maxLength={200}
-                          style={{ ...textareaStyle(false), paddingBottom: 22, width: '100%' }}
-                        />
-                        <span style={{ position: 'absolute', right: 10, bottom: 6, fontSize: 11, color: '#9aa4b2', pointerEvents: 'none' }}>
-                          {formData.followPlaybookDescription.length}/200
-                        </span>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 150px',
+                          gap: 12,
+                          padding: 12,
+                          borderRadius: 10,
+                          border: '1px solid #dbe4f2',
+                          background: 'linear-gradient(135deg, #f8fbff 0%, #f1f7ff 100%)',
+                        }}
+                      >
+                        <div style={{ display: 'grid', gap: 8 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#172033' }}>账号加粉玩法说明</div>
+                          <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.75 }}>
+                            通过引导用户关注指定账号并提交关注凭证，完成审核后发放奖励，适用于拉新关注、账号矩阵导流等场景。
+                          </div>
+                          <div style={{ display: 'grid', gap: 4, fontSize: 12, color: '#64748b' }}>
+                            <div>1. 用户在任务页查看账号并完成关注</div>
+                            <div>2. 上传账号主页与关注状态截图</div>
+                            <div>3. 审核通过后自动发放奖励</div>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            borderRadius: 8,
+                            border: '1px solid #d7e3f5',
+                            background: 'radial-gradient(circle at 30% 20%, #d9ecff 0%, #eef6ff 52%, #f8fbff 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#3b82f6',
+                            fontSize: 36,
+                            fontWeight: 700,
+                          }}
+                        >
+                          @+
+                        </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontSize: 12, color: '#475569', minWidth: 84 }}>开启该玩法</span>
