@@ -1,11 +1,7 @@
 import { Link, useNavigate } from 'react-router';
 import {
-  AtSign,
   Heart,
-  BarChart3,
-  Sparkles,
   Check,
-  Plus,
   Search,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -50,10 +46,7 @@ const SCENE_OPTIONS: Array<{
   color: string;
   bg: string;
 }> = [
-  { value: 'follow', label: '账号加粉', desc: '引导关注官方社媒账号，适合拉新关注、账号矩阵导流等场景。', playbook: '引导关注官方社媒账号，适合拉新关注、账号矩阵导流等场景', icon: AtSign, color: '#0f766e', bg: '#ecfdf5' },
   { value: 'engagement', label: '内容互动', desc: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推。', playbook: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推', icon: Heart, color: '#c2410c', bg: '#fff7ed' },
-  { value: 'seeding', label: '内容种草', desc: '发布原创内容并回传链接，适合征集原创笔记、短视频和测评内容。', playbook: '发布原创内容并回传链接，适合征集原创笔记、短视频和晒单内容', icon: Sparkles, color: '#1d4ed8', bg: '#eff6ff' },
-  { value: 'engagement_reward', label: '效果种草', desc: '发布种草内容并达到指定互动量，适合按效果付费、筛选优质内容。', playbook: '发布种草内容并达到指定互动量得奖励，适用优质内容筛选、KOC潜力挖掘等场景', icon: BarChart3, color: '#7c3aed', bg: '#f5f3ff' },
 ];
 
 function normalizePlatform(platform: string) {
@@ -298,7 +291,7 @@ export function TaskList() {
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sceneFilter, setSceneFilter] = useState<'all' | SceneKey>('all');
+  const [sceneFilter, setSceneFilter] = useState<'all' | SceneKey>('engagement');
   const [statusFilter, setStatusFilter] = useState<'all' | Task['status']>('all');
   const [platformFilter, setPlatformFilter] = useState<string>('');
   const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
@@ -390,7 +383,7 @@ export function TaskList() {
       const matchesSearch =
         t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         formatTaskId(t.id).includes(searchTerm.replace(/\D/g, ''));
-      const matchesScene = sceneFilter === 'all' || t.scene === sceneFilter;
+      const matchesScene = t.scene === sceneFilter;
       const matchesStatus =
         statusFilter === 'all' || t.status === statusFilter;
       const taskPlatform = normalizePlatform(t.platform);
@@ -565,7 +558,6 @@ export function TaskList() {
                 minWidth: '200px',
               }}
             >
-              <option value="all">全部</option>
               {SCENE_OPTIONS.map((scene) => (
                 <option key={scene.value} value={scene.value}>
                   {scene.label}
@@ -585,10 +577,8 @@ export function TaskList() {
               }}
             >
               任务场景：
-              <span style={{ color: sceneFilter === 'all' ? 'var(--muted-foreground)' : 'var(--foreground)' }}>
-                {sceneFilter === 'all'
-                  ? '请选择'
-                  : (SCENE_OPTIONS.find((item) => item.value === sceneFilter)?.label ?? '请选择')}
+              <span style={{ color: 'var(--foreground)' }}>
+                {SCENE_OPTIONS.find((item) => item.value === sceneFilter)?.label ?? '内容互动'}
               </span>
             </span>
             <svg
@@ -828,11 +818,11 @@ export function TaskList() {
           </div>
 
           {/* Reset */}
-          {(searchTerm || sceneFilter !== 'all' || statusFilter !== 'all' || !!platformFilter) && (
+          {(searchTerm || sceneFilter !== 'engagement' || statusFilter !== 'all' || !!platformFilter) && (
             <button
               onClick={() => {
                 setSearchTerm('');
-                setSceneFilter('all');
+                setSceneFilter('engagement');
                 setStatusFilter('all');
                 setPlatformFilter('');
                 setCurrentPage(1);
@@ -852,33 +842,6 @@ export function TaskList() {
             </button>
           )}
 
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* Create Button */}
-          <Link
-            to="/backend/tasks/create"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 16px',
-              background: 'var(--primary)',
-              color: 'var(--primary-foreground)',
-              borderRadius: 'var(--radius)',
-              textDecoration: 'none',
-              fontSize: 'var(--text-base)',
-              fontWeight: 'var(--font-weight-medium)',
-              boxShadow: '0 2px 8px rgba(36,116,255,0.25)',
-              transition: 'opacity 0.15s',
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.88')}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            创建任务
-          </Link>
         </div>
 
         {/* Table */}
