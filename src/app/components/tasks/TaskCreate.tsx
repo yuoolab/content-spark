@@ -126,6 +126,7 @@ export function TaskCreate() {
   const [previewImageUrl, setPreviewImageUrl] = useState('');
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [followTab, setFollowTab] = useState<'task' | 'account'>('task');
+  const [draggingFollowIndex, setDraggingFollowIndex] = useState<number | null>(null);
   const [prizeError, setPrizeError] = useState('');
   const [selectedPrize, setSelectedPrize] = useState<PrizeConfig | null>(null);
   const [editingTierIndex, setEditingTierIndex] = useState<number | null>(null);
@@ -210,6 +211,16 @@ export function TaskCreate() {
     setShowValidation(true);
     if (requiredMissing) return;
     navigate('/backend/tasks');
+  };
+
+  const reorderFollowTargets = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setFormData((current) => {
+      const next = [...current.followTargets];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return { ...current, followTargets: next };
+    });
   };
 
   const openPrizeModal = (tierIndex?: number) => {
@@ -535,15 +546,25 @@ export function TaskCreate() {
                       {formData.followTargets.map((target, index) => (
                         <div
                           key={`${index}-${target.platform}`}
+                          draggable
+                          onDragStart={() => setDraggingFollowIndex(index)}
+                          onDragOver={(event) => event.preventDefault()}
+                          onDrop={() => {
+                            if (draggingFollowIndex === null) return;
+                            reorderFollowTargets(draggingFollowIndex, index);
+                            setDraggingFollowIndex(null);
+                          }}
+                          onDragEnd={() => setDraggingFollowIndex(null)}
                           style={{
                             display: 'grid',
                             gap: 10,
                             padding: 10,
                             border: '1px solid #e1e7f0',
                             borderRadius: 8,
-                            background: '#fcfdff',
+                            background: draggingFollowIndex === index ? '#f1f5f9' : '#fcfdff',
                             width: 'fit-content',
                             maxWidth: '100%',
+                            cursor: 'grab',
                           }}
                         >
                           <div style={{ display: 'grid', gridTemplateColumns: '340px 350px 32px', gap: 8, alignItems: 'center' }}>
