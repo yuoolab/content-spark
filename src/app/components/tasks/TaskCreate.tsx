@@ -557,10 +557,43 @@ export function TaskCreate() {
                           <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.75 }}>
                             通过引导用户关注指定账号并提交关注凭证，完成审核后发放奖励，适用于拉新关注、账号矩阵导流等场景。
                           </div>
-                          <div style={{ display: 'grid', gap: 4, fontSize: 12, color: '#64748b' }}>
-                            <div>1. 用户在任务页查看账号并完成关注</div>
-                            <div>2. 上传账号主页与关注状态截图</div>
-                            <div>3. 审核通过后自动发放奖励</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                            {[
+                              { no: '01', text: '查看账号并完成关注' },
+                              { no: '02', text: '上传主页与关注截图' },
+                              { no: '03', text: '审核通过发放奖励' },
+                            ].map((step) => (
+                              <div
+                                key={step.no}
+                                style={{
+                                  border: '1px solid #d9e5f6',
+                                  borderRadius: 8,
+                                  background: 'rgba(255,255,255,0.78)',
+                                  padding: '8px 8px 7px',
+                                  display: 'grid',
+                                  gap: 4,
+                                  minHeight: 56,
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    width: 24,
+                                    height: 24,
+                                    borderRadius: 999,
+                                    background: 'rgba(59,130,246,0.14)',
+                                    color: '#2563eb',
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  {step.no}
+                                </span>
+                                <span style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5 }}>{step.text}</span>
+                              </div>
+                            ))}
                           </div>
                         </div>
                         <div
