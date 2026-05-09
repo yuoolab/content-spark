@@ -1,7 +1,9 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
-import { ArrowLeft, LayoutDashboard, LayoutList, User } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, LayoutList, Share2, User } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { PageAnnotations } from "../components/annotations/PageAnnotations";
+import { useUserH5 } from "./state";
+import { toast } from "sonner";
 
 export const NAV_ITEMS = [
   { path: "/tasks", label: "任务", icon: LayoutList },
@@ -20,10 +22,13 @@ export function Container({ children }: { children: ReactNode }) {
   return (
     <div
       style={{
-        maxWidth: 480,
+        width: "100%",
+        maxWidth: "100%",
         minHeight: "100%",
         margin: "0 auto",
         padding: "16px 14px 96px",
+        boxSizing: "border-box",
+        overflowX: "hidden",
       }}
     >
       {children}
@@ -115,8 +120,11 @@ export function Pill({
 export function NavShell() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { tasks } = useUserH5();
   const pathname = location.pathname;
-  const phoneFrameWidth = 520;
+  const phoneDesignWidth = 375;
+  const phoneDesignHeight = 812;
+  const phoneScreenWidthExpr = `min(calc(100vw - 48px), calc((100dvh - 68px) * ${phoneDesignWidth} / ${phoneDesignHeight}), 460px)`;
   const accountVerifyPlatform = (() => {
     if (!pathname.startsWith("/account/verify/")) return "";
     const slug = pathname.split("/")[3] ?? "";
@@ -148,6 +156,13 @@ export function NavShell() {
 
   const showBottomNav = pathname === "/tasks" || pathname === "/account";
   const isSubPage = !showBottomNav;
+  const showShareButton = pathname.startsWith("/tasks/");
+  const showGiftSwitcher = pathname.startsWith("/tasks/");
+  const taskIdInPath = pathname.startsWith("/tasks/") ? pathname.split("/")[2] ?? "" : "";
+  const activeTask = tasks.find((item) => item.id === taskIdInPath);
+  const showSubmitStateSwitcher = pathname.startsWith("/tasks/") && activeTask?.scene === "engagement";
+  const showActivityStatusSwitcher =
+    pathname.startsWith("/tasks/") && (activeTask?.scene === "engagement" || activeTask?.scene === "follow");
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -156,22 +171,41 @@ export function NavShell() {
     }
     navigate("/tasks");
   };
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: pageTitle || "任务详情", url: window.location.href });
+        return;
+      }
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("链接已复制");
+    } catch {
+      toast.error("分享失败，请稍后重试");
+    }
+  };
 
   return (
     <div
       style={{
+        "--h5-screen-width": phoneScreenWidthExpr,
+        "--h5-screen-height": `calc(var(--h5-screen-width) * ${phoneDesignHeight} / ${phoneDesignWidth})`,
+        "--h5-frame-width": "calc(var(--h5-screen-width) + 20px)",
+        "--h5-ui-scale": "0.92",
+        height: "100dvh",
         minHeight: "100vh",
+        overflow: "hidden",
         position: "relative",
         background:
           "radial-gradient(circle at top, rgba(36,116,255,0.12), transparent 34%), linear-gradient(180deg, #edf4ff 0%, #f8fbff 100%)",
-      }}
+      } as React.CSSProperties}
     >
       <div
         style={{
           position: "relative",
-          maxWidth: phoneFrameWidth,
+          width: "calc(var(--h5-frame-width) + 20px)",
           margin: "0 auto",
           padding: "16px 10px 26px",
+          boxSizing: "border-box",
         }}
       >
         <div
@@ -239,7 +273,8 @@ export function NavShell() {
           </div>
           <div
             style={{
-              minHeight: "calc(100vh - 42px)",
+              width: "var(--h5-screen-width)",
+              aspectRatio: `${phoneDesignWidth} / ${phoneDesignHeight}`,
               borderRadius: 34,
               overflow: "hidden",
               background: "linear-gradient(180deg, #edf4ff 0%, #f8fbff 100%)",
@@ -247,48 +282,91 @@ export function NavShell() {
           >
             <div
               style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 10,
-                backdropFilter: "blur(18px)",
-                background: "rgba(247,250,255,0.84)",
-                borderBottom: "1px solid rgba(203,213,225,0.45)",
+                width: "calc(100% / var(--h5-ui-scale))",
+                height: "calc(100% / var(--h5-ui-scale))",
+                transform: "scale(var(--h5-ui-scale))",
+                transformOrigin: "top left",
+                display: "flex",
+                flexDirection: "column",
               }}
             >
-              <div style={{ padding: "42px 16px 12px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                  <div style={{ minHeight: 36, minWidth: 36, display: "flex", alignItems: "center" }}>
-                    {isSubPage && (
-                      <button
-                        type="button"
-                        onClick={handleBack}
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 12,
-                          border: "1px solid rgba(203,213,225,0.75)",
-                          background: "#fff",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow: "0 8px 18px rgba(15, 23, 42, 0.06)",
-                          cursor: "pointer",
-                        }}
-                        aria-label="返回上一页"
-                        title="返回上一页"
-                      >
-                        <ArrowLeft size={18} color="#2474ff" />
-                      </button>
-                    )}
+              <div
+                style={{
+                  zIndex: 10,
+                  backdropFilter: "blur(18px)",
+                  background: "rgba(247,250,255,0.84)",
+                  borderBottom: "1px solid rgba(203,213,225,0.45)",
+                  flexShrink: 0,
+                }}
+              >
+                <div style={{ padding: "42px 16px 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div style={{ minHeight: 36, minWidth: 36, display: "flex", alignItems: "center" }}>
+                      {isSubPage && (
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 12,
+                            border: "1px solid rgba(203,213,225,0.75)",
+                            background: "#fff",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 8px 18px rgba(15, 23, 42, 0.06)",
+                            cursor: "pointer",
+                          }}
+                          aria-label="返回上一页"
+                          title="返回上一页"
+                        >
+                          <ArrowLeft size={18} color="#2474ff" />
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, textAlign: "center", fontSize: 20, fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>
+                      {pageTitle}
+                    </div>
+                    <div style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+                      {showShareButton ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleShare()}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 12,
+                            border: "1px solid rgba(203,213,225,0.75)",
+                            background: "#fff",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 8px 18px rgba(15, 23, 42, 0.06)",
+                            cursor: "pointer",
+                          }}
+                          aria-label="分享任务"
+                          title="分享任务"
+                        >
+                          <Share2 size={17} color="#2474ff" />
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
-                  <div style={{ flex: 1, textAlign: "center", fontSize: 20, fontWeight: 800, color: "#0f172a", lineHeight: 1.2 }}>
-                    {pageTitle}
-                  </div>
-                  <div style={{ width: 40, height: 40 }} />
                 </div>
               </div>
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                  WebkitOverflowScrolling: "touch",
+                }}
+              >
+                <Outlet />
+              </div>
             </div>
-            <Outlet />
           </div>
         </div>
       </div>
@@ -298,7 +376,7 @@ export function NavShell() {
         onClick={() => navigate("/backend/dashboard")}
         style={{
           position: "fixed",
-          left: "max(16px, calc(50% - 260px - 130px))",
+          left: "max(16px, calc(50% - (var(--h5-frame-width) / 2) - 130px))",
           bottom: "16px",
           zIndex: 25,
           height: 42,
@@ -310,8 +388,7 @@ export function NavShell() {
           display: "inline-flex",
           alignItems: "center",
           gap: 6,
-          fontSize: 12,
-          fontWeight: 800,
+          fontSize: 12, fontWeight: 400,
           cursor: "pointer",
           boxShadow: "0 14px 34px rgba(36,116,255,0.18)",
           backdropFilter: "blur(14px)",
@@ -321,13 +398,165 @@ export function NavShell() {
         预览后台
       </button>
 
+      {showGiftSwitcher && (
+        <div
+          style={{
+            position: "fixed",
+            left: "calc(50% + (var(--h5-frame-width) / 2) + 12px)",
+            top: "calc(50% - 54px)",
+            transform: "translateY(-50%)",
+            zIndex: 22,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          {[
+            { id: "points", label: "积分" },
+            { id: "gift", label: "赠品" },
+            { id: "cash", label: "红包" },
+          ].map((reward) => {
+            const active = new URLSearchParams(location.search).get("reward") === reward.id;
+            return (
+              <button
+                key={reward.id}
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(location.search);
+                  next.set("reward", reward.id);
+                  navigate(`${pathname}?${next.toString()}`, { replace: true });
+                }}
+                style={{
+                  height: 30,
+                  minWidth: 56,
+                  padding: "0 10px",
+                  borderRadius: 999,
+                  border: active ? "1px solid rgba(36,116,255,0.34)" : "1px solid rgba(203,213,225,0.92)",
+                  background: active ? "rgba(36,116,255,0.10)" : "rgba(255,255,255,0.95)",
+                  color: active ? "#2474ff" : "#475569",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 8px 18px rgba(15,23,42,0.08)",
+                }}
+              >
+                {reward.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {showActivityStatusSwitcher && (
+        <div
+          style={{
+            position: "fixed",
+            left: "calc(50% + (var(--h5-frame-width) / 2) + 12px)",
+            top: "calc(50% - 194px)",
+            transform: "translateY(-50%)",
+            zIndex: 22,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {[
+            { id: "upcoming", label: "未开始" },
+            { id: "ongoing", label: "进行中" },
+            { id: "finished", label: "已结束" },
+          ].map((item) => {
+            const active = new URLSearchParams(location.search).get("activityStatus") === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(location.search);
+                  next.set("activityStatus", item.id);
+                  navigate(`${pathname}?${next.toString()}`, { replace: true });
+                }}
+                style={{
+                  height: 30,
+                  minWidth: 64,
+                  padding: "0 10px",
+                  borderRadius: 999,
+                  border: active ? "1px solid rgba(36,116,255,0.34)" : "1px solid rgba(203,213,225,0.92)",
+                  background: active ? "rgba(36,116,255,0.10)" : "rgba(255,255,255,0.95)",
+                  color: active ? "#2474ff" : "#475569",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 8px 18px rgba(15,23,42,0.08)",
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {showSubmitStateSwitcher && (
+        <div
+          style={{
+            position: "fixed",
+            left: "calc(50% + (var(--h5-frame-width) / 2) + 12px)",
+            bottom: "58px",
+            zIndex: 22,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          {[
+            { id: "pending", label: "待上传" },
+            { id: "reviewing", label: "审核中" },
+            { id: "rejected", label: "审核拒绝" },
+            { id: "approved", label: "已通过" },
+          ].map((state) => {
+            const active = new URLSearchParams(location.search).get("submitState") === state.id;
+            return (
+              <button
+                key={state.id}
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(location.search);
+                  next.set("submitState", state.id);
+                  navigate(`${pathname}?${next.toString()}`, { replace: true });
+                }}
+                style={{
+                  height: 30,
+                  minWidth: 72,
+                  padding: "0 10px",
+                  borderRadius: 999,
+                  border: active ? "1px solid rgba(36,116,255,0.34)" : "1px solid rgba(203,213,225,0.92)",
+                  background: active ? "rgba(36,116,255,0.10)" : "rgba(255,255,255,0.95)",
+                  color: active ? "#2474ff" : "#475569",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 8px 18px rgba(15,23,42,0.08)",
+                }}
+              >
+                {state.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {showBottomNav && (
         <div
           style={{
             position: "fixed",
             left: "50%",
-            transform: "translateX(-50%)",
-            width: "min(calc(100vw - 20px), 500px)",
+            transform: "translateX(-50%) scale(var(--h5-ui-scale))",
+            transformOrigin: "bottom center",
+            width: "calc(var(--h5-screen-width) / var(--h5-ui-scale))",
             bottom: 0,
             zIndex: 20,
             padding: "0 10px 10px",

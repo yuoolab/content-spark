@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useUserH5, type Platform } from "../state";
 import { Card, Container } from "../shared";
-import { PlatformBadge } from "../../components/platform/PlatformBadge";
+import { PlatformLogo } from "../../components/platform/PlatformBadge";
 
 function InputField({
   label,
@@ -18,7 +18,7 @@ function InputField({
 }) {
   return (
     <label style={{ display: "grid", gap: 6 }}>
-      <span style={{ fontSize: 12, color: "#475569", fontWeight: 800, letterSpacing: "0.01em" }}>{label}</span>
+      <span style={{ fontSize: 12, color: "#475569", fontWeight: 400, letterSpacing: "0.01em" }}>{label}</span>
       <input
         value={value}
         readOnly={readOnly}
@@ -140,7 +140,7 @@ export function AccountVerifyCenterPage() {
               const content = (
                 <>
                   <div style={{ minWidth: 0 }}>
-                    <PlatformBadge platform={item.platform} size={15} />
+                    <PlatformLogo platform={item.platform} size={18} />
                     <div style={{ marginTop: 6, fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
                       {item.hint}
                     </div>
@@ -155,8 +155,7 @@ export function AccountVerifyCenterPage() {
                         background: toneMeta.bg,
                         border: `1px solid ${toneMeta.border}`,
                         color: toneMeta.fg,
-                        fontSize: 12,
-                        fontWeight: 800,
+                        fontSize: 12, fontWeight: 400,
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -325,7 +324,7 @@ export function AccountVerifyPage() {
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <PlatformBadge platform={platform} size={15} />
+              <PlatformLogo platform={platform} size={18} />
               <div style={{ marginTop: 8, fontSize: 18, fontWeight: 900, color: "#0f172a", lineHeight: 1.2 }}>
                 {visualPlatform}账号认证
               </div>
@@ -361,8 +360,7 @@ export function AccountVerifyPage() {
                             ? "rgba(148,163,184,0.20)"
                             : "rgba(36,116,255,0.18)"
                     }`,
-                    fontSize: 12,
-                    fontWeight: 800,
+                    fontSize: 12, fontWeight: 400,
                   }}
                 >
                   {detailStatus}
