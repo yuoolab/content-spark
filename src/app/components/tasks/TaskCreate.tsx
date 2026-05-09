@@ -394,7 +394,7 @@ export function TaskCreate() {
                           fontWeight: 600,
                         }}
                       >
-                        上传截图
+                        上传主页截图
                       </label>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -549,17 +549,22 @@ export function TaskCreate() {
                           <div style={{ display: 'grid', gridTemplateColumns: '340px 350px 32px', gap: 8, alignItems: 'center' }}>
                             <select
                               value={target.account}
-                              onChange={(event) =>
+                              onChange={(event) => {
+                                if (event.target.value === '__manage_accounts__') {
+                                  setFollowTab('account');
+                                  return;
+                                }
                                 setFormData({
                                   ...formData,
                                   followTargets: formData.followTargets.map((item, itemIndex) =>
                                     itemIndex === index ? { ...item, account: event.target.value } : item
                                   ),
-                                })
-                              }
+                                });
+                              }}
                               style={{ ...inputStyle(showValidation && !target.account.trim()), width: '100%' }}
                             >
                               <option value="">请选择账号</option>
+                              <option value="__manage_accounts__">去管理账号</option>
                               {formData.followManagedAccounts.map((item) => (
                                   <option key={item.id} value={item.accountName}>
                                     {item.platform} - {item.accountName}
@@ -619,29 +624,26 @@ export function TaskCreate() {
                             setFormData({
                               ...formData,
                               followTargets:
-                                formData.followTargets.length >= 10
-                                  ? formData.followTargets
-                                  : [...formData.followTargets, { platform: '小红书', account: '', sampleImage: null, sampleImagePreview: '', guideText: '' }],
+                                [...formData.followTargets, { platform: '小红书', account: '', sampleImage: null, sampleImagePreview: '', guideText: '' }],
                             })
                           }
-                          disabled={formData.followTargets.length >= 10}
                           style={{
                             height: 32,
                             padding: '0 10px',
                             borderRadius: 6,
                             border: '1px dashed #cbd5e1',
                             background: '#fff',
-                            color: formData.followTargets.length >= 10 ? '#a1a8b3' : '#1d4ed8',
+                            color: '#1d4ed8',
                             fontSize: 12,
                             fontWeight: 700,
-                            cursor: formData.followTargets.length >= 10 ? 'not-allowed' : 'pointer',
+                            cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 6,
                           }}
                         >
                           <Plus size={13} />
-                          新增账号（0/10）
+                          新增账号
                         </button>
                         <span style={{ fontSize: 12, color: '#687386' }}></span>
                       </div>
