@@ -154,8 +154,8 @@ export function TaskCreate() {
     rewardType: 'points' as RewardType,
     rewardAmount: 50,
     followRewardMode: 'all_accounts' as FollowRewardMode,
-    followAllowResubmitAfterReject: false,
-    engagementAllowResubmitAfterReject: false,
+    followAllowResubmitAfterReject: true,
+    engagementAllowResubmitAfterReject: true,
     showEnabled: true,
     maxPerUser: 1,
     followTargets: [{ platform: '小红书', account: '', sampleImage: null as File | null, sampleImagePreview: '', guideText: '' }],
@@ -182,7 +182,7 @@ export function TaskCreate() {
     seedingGuideText: '',
     seedingSampleImages: [] as File[],
     seedingSampleImagePreviews: [] as string[],
-    seedingAllowResubmitAfterReject: false,
+    seedingAllowResubmitAfterReject: true,
     seedingRuleDescription: '',
     contentType: '图文或视频',
     seedingRewardMode: 'limited' as 'limited',
@@ -195,7 +195,7 @@ export function TaskCreate() {
       prize: null as PrizeConfig | null,
     }],
     engagementRewardRuleDescription: '',
-    engagementRewardAllowResubmitAfterReject: false,
+    engagementRewardAllowResubmitAfterReject: true,
     engagementRewardSampleImages: [] as File[],
     engagementRewardSampleImagePreviews: [] as string[],
   });
@@ -687,7 +687,7 @@ export function TaskCreate() {
                         <span style={switchThumbStyle(formData.followAllowResubmitAfterReject)} />
                       </button>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        开启后，若审核拒绝，用户修改后可以重新提交审核
+                        默认开启：若审核拒绝，用户修改后可再次提交审核（可手动关闭）
                       </span>
                     </div>
                   </Field>
@@ -889,7 +889,7 @@ export function TaskCreate() {
                         <span style={switchThumbStyle(formData.engagementAllowResubmitAfterReject)} />
                       </button>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        开启后，若审核拒绝，用户修改后可以重新提交审核
+                        默认开启：若审核拒绝，用户修改后可再次提交审核（可手动关闭）
                       </span>
                     </div>
                   </Field>
@@ -1091,7 +1091,7 @@ export function TaskCreate() {
                         <span style={switchThumbStyle(formData.engagementRewardAllowResubmitAfterReject)} />
                       </button>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        开启后，若审核拒绝，用户修改后可以重新提交审核
+                        默认开启：若审核拒绝，用户修改后可再次提交审核（可手动关闭）
                       </span>
                     </div>
                   </Field>
@@ -1294,7 +1294,7 @@ export function TaskCreate() {
                         <span style={switchThumbStyle(formData.seedingAllowResubmitAfterReject)} />
                       </button>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        开启后，若审核拒绝，用户修改后可以重新提交审核
+                        默认开启：若审核拒绝，用户修改后可再次提交审核（可手动关闭）
                       </span>
                     </div>
                   </Field>
