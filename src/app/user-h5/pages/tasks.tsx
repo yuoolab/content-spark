@@ -10,6 +10,7 @@ import {
   Globe,
   Grid2x2,
   Hash,
+  History,
   Image as ImageIcon,
   Link2,
   MessageCircle,
