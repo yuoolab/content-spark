@@ -303,9 +303,41 @@ export function TaskCreate() {
                         border: '1px solid #e2e8f0',
                         borderRadius: 10,
                         background: '#fcfdff',
+                        width: 'fit-content',
+                        maxWidth: '100%',
+                        position: 'relative',
                       }}
                     >
-                      <div style={{ display: 'grid', gridTemplateColumns: '140px 240px 100px 32px', gap: 8, alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (formData.followManagedAccounts.length <= 1) return;
+                          const next = formData.followManagedAccounts.filter((_, i) => i !== idx);
+                          setFormData({ ...formData, followManagedAccounts: next });
+                        }}
+                        disabled={formData.followManagedAccounts.length <= 1}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 22,
+                          height: 22,
+                          borderRadius: 999,
+                          border: '1px solid #d8dee8',
+                          background: formData.followManagedAccounts.length <= 1 ? '#f3f4f6' : '#fff',
+                          color: formData.followManagedAccounts.length <= 1 ? '#a1a8b3' : '#6b7280',
+                          cursor: formData.followManagedAccounts.length <= 1 ? 'not-allowed' : 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0,
+                          lineHeight: 1,
+                        }}
+                        aria-label="删除账号"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                      <div style={{ display: 'grid', gridTemplateColumns: '120px 220px 90px', gap: 8, alignItems: 'center', paddingRight: 30 }}>
                       <select
                         value={item.platform}
                         onChange={(event) => {
@@ -364,18 +396,6 @@ export function TaskCreate() {
                       >
                         上传截图
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (formData.followManagedAccounts.length <= 1) return;
-                          const next = formData.followManagedAccounts.filter((_, i) => i !== idx);
-                          setFormData({ ...formData, followManagedAccounts: next });
-                        }}
-                        disabled={formData.followManagedAccounts.length <= 1}
-                        style={removeIconButtonStyle(formData.followManagedAccounts.length <= 1)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {item.profileImagePreview ? (
