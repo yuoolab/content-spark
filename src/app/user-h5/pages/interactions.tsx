@@ -529,7 +529,7 @@ const copyLinkButtonStyle: React.CSSProperties = {
   width: "100%",
   border: "1px solid rgba(36,116,255,0.14)",
   background: "rgba(36,116,255,0.08)",
-  color: "#1d4ed8",
+  color: "#64748b",
   borderRadius: 16,
   padding: "12px 14px",
   display: "flex",

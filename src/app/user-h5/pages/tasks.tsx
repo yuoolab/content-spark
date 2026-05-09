@@ -669,7 +669,7 @@ function SceneTaskDetail({
                       <button
                         type="button"
                         onClick={() => void handleCopyText(task.commentKeyword ?? "", "评论关键词")}
-                        style={{ border: "none", background: "transparent", padding: 0, color: "#2474ff", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                        style={{ border: "none", background: "transparent", padding: 0, color: "#64748b", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
                         aria-label="复制评论关键词"
                       >
                         <Copy size={14} />
@@ -1273,7 +1273,7 @@ function getSceneSteps(scene: DetailScene) {
     return [
       { title: "打开内容", desc: "复制链接在浏览器打开" },
       { title: "完成互动", desc: "按要求完成互动动作" },
-      { title: "上传凭证", desc: "上传互动截图" },
+      { title: "上传凭证", desc: "在该页面上传互动截图" },
       { title: "发放奖励", desc: "审核通过发放奖励" },
     ];
   }
@@ -2361,7 +2361,7 @@ const copyAccountIconButtonStyle = (copied: boolean): React.CSSProperties => ({
   borderRadius: 999,
   border: copied ? "1px solid rgba(36,116,255,0.22)" : "1px solid transparent",
   background: copied ? "rgba(36,116,255,0.10)" : "transparent",
-  color: "#2474ff",
+  color: "#64748b",
   cursor: "pointer",
   flexShrink: 0,
 });
@@ -2444,7 +2444,7 @@ const sceneTagIconWrapStyle: React.CSSProperties = {
 const sceneTagCopyButtonStyle: React.CSSProperties = {
   border: "none",
   background: "transparent",
-  color: "#2474ff",
+  color: "#64748b",
   fontSize: 12,
   fontWeight: 500,
   display: "inline-flex",
