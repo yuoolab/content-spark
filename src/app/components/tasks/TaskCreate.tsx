@@ -468,7 +468,7 @@ export function TaskCreate() {
                     style={addInlineButtonStyle(formData.followManagedAccounts.length >= 20)}
                   >
                     <Plus size={13} />
-                    新增账号
+                    新增账号（0/20）
                   </button>
                 </div>
               </Field>
@@ -564,7 +564,7 @@ export function TaskCreate() {
                               style={{ ...inputStyle(showValidation && !target.account.trim()), width: '100%' }}
                             >
                               <option value="">请选择账号</option>
-                              <option value="__manage_accounts__">去管理账号</option>
+                              <option value="__manage_accounts__" style={{ color: '#1d4ed8', fontWeight: 700 }}>去管理账号</option>
                               {formData.followManagedAccounts.map((item) => (
                                   <option key={item.id} value={item.accountName}>
                                     {item.platform} - {item.accountName}
