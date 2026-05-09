@@ -305,7 +305,6 @@ export function TaskList() {
   const [isPlatformDropdownOpen, setIsPlatformDropdownOpen] = useState(false);
   const [orderEditor, setOrderEditor] = useState<{ taskId: string; value: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [syncedTaskIds, setSyncedTaskIds] = useState<string[]>(['2', '4', '7', '10']);
   const [confirmAction, setConfirmAction] = useState<{ type: 'invalidate' | 'delete'; task: Task } | null>(null);
 
   useEffect(() => {
@@ -334,7 +333,6 @@ export function TaskList() {
 
   const deleteTask = (id: string) => {
     setTasks((current) => current.filter((task) => task.id !== id));
-    setSyncedTaskIds((current) => current.filter((taskId) => taskId !== id));
   };
 
   const copyTask = (task: Task) => {
@@ -365,12 +363,6 @@ export function TaskList() {
       current.map((task) =>
         task.id === id ? { ...task, showOrder: nextOrder } : task
       )
-    );
-  };
-
-  const syncToActivityCenter = (id: string) => {
-    setSyncedTaskIds((current) =>
-      current.includes(id) ? current : [...current, id]
     );
   };
 
@@ -892,39 +884,13 @@ export function TaskList() {
 
         {/* Table */}
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: '1440px', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', minWidth: '1240px', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: 'var(--muted)' }}>
                 {[
                   { key: 'taskName', label: '任务名称', minWidth: 280 },
                   { key: 'scene', label: '任务场景', minWidth: 140 },
                   { key: 'participants', label: '参与人数', minWidth: 110 },
-                  {
-                    key: 'sync',
-                    minWidth: 180,
-                    label: (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        同步至活动中心
-                        <span
-                          style={{
-                            width: '14px',
-                            height: '14px',
-                            borderRadius: '999px',
-                            border: '1px solid rgba(148,163,184,0.9)',
-                            color: 'rgba(148,163,184,1)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            lineHeight: 1,
-                          }}
-                        >
-                          ?
-                        </span>
-                      </span>
-                    ),
-                  },
                   { key: 'status', label: '任务状态', minWidth: 140 },
                   { key: 'date', label: '任务时间', minWidth: 170 },
                   { key: 'actions', label: '操作', minWidth: 250 },
@@ -962,7 +928,6 @@ export function TaskList() {
             </thead>
             <tbody>
               {pagedTasks.map((task, rowIndex) => {
-                const isSynced = syncedTaskIds.includes(task.id);
                 return (
                 <tr
                   key={task.id}
@@ -1005,41 +970,6 @@ export function TaskList() {
                     <span style={{ fontSize: 'var(--text-base)', color: 'var(--foreground)', fontWeight: 'var(--font-weight-semibold)' }}>
                       {task.participants.toLocaleString()}
                     </span>
-                  </td>
-
-                  {/* Sync to Activity Center */}
-                  <td style={{ padding: '14px 20px', minWidth: '180px', whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: 'var(--text-base)', color: 'var(--card-foreground)' }}>
-                        <span
-                          style={{
-                            width: '7px',
-                            height: '7px',
-                            borderRadius: '50%',
-                            background: isSynced ? 'rgba(82,196,26,1)' : 'rgba(191,191,191,1)',
-                            display: 'inline-block',
-                          }}
-                        />
-                        {isSynced ? '已同步' : '未同步'}
-                      </span>
-                      {!isSynced && (
-                        <button
-                          type="button"
-                          onClick={() => syncToActivityCenter(task.id)}
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            padding: 0,
-                            color: 'rgba(36,116,255,1)',
-                            fontSize: 'var(--text-base)',
-                            fontWeight: 'var(--font-weight-medium)',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          同步
-                        </button>
-                      )}
-                    </div>
                   </td>
 
                   {/* Status */}
