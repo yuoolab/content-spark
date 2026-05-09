@@ -172,6 +172,8 @@ export function TaskCreate() {
     seedingHashtag: '',
     seedingKeyword: '',
     seedingGuideText: '',
+    seedingSampleImages: [] as File[],
+    seedingSampleImagePreviews: [] as string[],
     seedingAllowResubmitAfterReject: false,
     seedingRuleDescription: '',
     contentType: '图文或视频',
@@ -189,6 +191,8 @@ export function TaskCreate() {
     }],
     engagementRewardRuleDescription: '',
     engagementRewardAllowResubmitAfterReject: false,
+    engagementRewardSampleImages: [] as File[],
+    engagementRewardSampleImagePreviews: [] as string[],
   });
 
   const sceneMeta = sceneOptions.find((item) => item.key === scene) ?? sceneOptions[0];
@@ -879,6 +883,115 @@ export function TaskCreate() {
                       style={baseInputStyle}
                     />
                   </Field>
+                  <Field label="内容示例图">
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      <input
+                        id="engagement-reward-sample-image"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={(event) => {
+                          const files = Array.from(event.target.files ?? []);
+                          setFormData((current) => {
+                            if (files.length === 0) return current;
+                            const remaining = 3 - current.engagementRewardSampleImages.length;
+                            if (remaining <= 0) return current;
+                            const added = files.slice(0, remaining);
+                            const previews = added.map((file) => URL.createObjectURL(file));
+                            return {
+                              ...current,
+                              engagementRewardSampleImages: [...current.engagementRewardSampleImages, ...added],
+                              engagementRewardSampleImagePreviews: [...current.engagementRewardSampleImagePreviews, ...previews],
+                            };
+                          });
+                          event.target.value = '';
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {formData.engagementRewardSampleImagePreviews.map((preview, imgIndex) => (
+                          <div
+                            key={`engagement-reward-sample-${imgIndex}`}
+                            style={{
+                              width: 112,
+                              height: 112,
+                              border: '1px dashed #cbd5e1',
+                              borderRadius: 4,
+                              position: 'relative',
+                              overflow: 'hidden',
+                              background: '#fff',
+                            }}
+                          >
+                            <img
+                              src={preview}
+                              alt="内容示例图预览"
+                              onClick={() => setPreviewImageUrl(preview)}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData((current) => {
+                                  URL.revokeObjectURL(current.engagementRewardSampleImagePreviews[imgIndex]);
+                                  return {
+                                    ...current,
+                                    engagementRewardSampleImages: current.engagementRewardSampleImages.filter((_, i) => i !== imgIndex),
+                                    engagementRewardSampleImagePreviews: current.engagementRewardSampleImagePreviews.filter((_, i) => i !== imgIndex),
+                                  };
+                                })
+                              }
+                              style={{
+                                position: 'absolute',
+                                top: 6,
+                                right: 6,
+                                width: 22,
+                                height: 22,
+                                borderRadius: 999,
+                                border: 'none',
+                                background: 'rgba(220,38,38,0.92)',
+                                color: '#fff',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                padding: 0,
+                                lineHeight: 1,
+                              }}
+                              aria-label="删除内容示例图"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        {formData.engagementRewardSampleImages.length < 3 && (
+                          <label
+                            htmlFor="engagement-reward-sample-image"
+                            style={{
+                              width: 112,
+                              height: 112,
+                              border: '1px dashed #cbd5e1',
+                              borderRadius: 4,
+                              background: '#fff',
+                              display: 'inline-flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 4,
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              color: '#4b5565',
+                            }}
+                          >
+                            <span style={{ fontSize: 34, lineHeight: 1, color: '#9aa4b2' }}>+</span>
+                            <span style={{ fontSize: 12, fontWeight: 600 }}>上传图片</span>
+                          </label>
+                        )}
+                      </div>
+                      <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
+                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 3 张。
+                      </span>
+                    </div>
+                  </Field>
                   <Field label="拒绝后再次提交">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <button
@@ -972,6 +1085,115 @@ export function TaskCreate() {
                       placeholder="请输入创作方向"
                       style={baseInputStyle}
                     />
+                  </Field>
+                  <Field label="内容示例图">
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      <input
+                        id="seeding-sample-image"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={(event) => {
+                          const files = Array.from(event.target.files ?? []);
+                          setFormData((current) => {
+                            if (files.length === 0) return current;
+                            const remaining = 3 - current.seedingSampleImages.length;
+                            if (remaining <= 0) return current;
+                            const added = files.slice(0, remaining);
+                            const previews = added.map((file) => URL.createObjectURL(file));
+                            return {
+                              ...current,
+                              seedingSampleImages: [...current.seedingSampleImages, ...added],
+                              seedingSampleImagePreviews: [...current.seedingSampleImagePreviews, ...previews],
+                            };
+                          });
+                          event.target.value = '';
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {formData.seedingSampleImagePreviews.map((preview, imgIndex) => (
+                          <div
+                            key={`seeding-sample-${imgIndex}`}
+                            style={{
+                              width: 112,
+                              height: 112,
+                              border: '1px dashed #cbd5e1',
+                              borderRadius: 4,
+                              position: 'relative',
+                              overflow: 'hidden',
+                              background: '#fff',
+                            }}
+                          >
+                            <img
+                              src={preview}
+                              alt="内容示例图预览"
+                              onClick={() => setPreviewImageUrl(preview)}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData((current) => {
+                                  URL.revokeObjectURL(current.seedingSampleImagePreviews[imgIndex]);
+                                  return {
+                                    ...current,
+                                    seedingSampleImages: current.seedingSampleImages.filter((_, i) => i !== imgIndex),
+                                    seedingSampleImagePreviews: current.seedingSampleImagePreviews.filter((_, i) => i !== imgIndex),
+                                  };
+                                })
+                              }
+                              style={{
+                                position: 'absolute',
+                                top: 6,
+                                right: 6,
+                                width: 22,
+                                height: 22,
+                                borderRadius: 999,
+                                border: 'none',
+                                background: 'rgba(220,38,38,0.92)',
+                                color: '#fff',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                padding: 0,
+                                lineHeight: 1,
+                              }}
+                              aria-label="删除内容示例图"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                        {formData.seedingSampleImages.length < 3 && (
+                          <label
+                            htmlFor="seeding-sample-image"
+                            style={{
+                              width: 112,
+                              height: 112,
+                              border: '1px dashed #cbd5e1',
+                              borderRadius: 4,
+                              background: '#fff',
+                              display: 'inline-flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 4,
+                              cursor: 'pointer',
+                              userSelect: 'none',
+                              color: '#4b5565',
+                            }}
+                          >
+                            <span style={{ fontSize: 34, lineHeight: 1, color: '#9aa4b2' }}>+</span>
+                            <span style={{ fontSize: 12, fontWeight: 600 }}>上传图片</span>
+                          </label>
+                        )}
+                      </div>
+                      <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
+                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 3 张。
+                      </span>
+                    </div>
                   </Field>
                   <Field label="拒绝后再次提交">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
