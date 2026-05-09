@@ -273,7 +273,7 @@ export function TaskCreate() {
       <div style={shellStyle}>
         <button type="button" onClick={() => navigate('/backend/tasks')} style={backButtonStyle}>
           <ArrowLeft size={15} />
-          返回{sceneMeta.label}
+          创建{sceneMeta.label}
         </button>
 
         <form onSubmit={submit} noValidate style={contentGridStyle}>
