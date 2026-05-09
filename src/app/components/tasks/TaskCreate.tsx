@@ -120,9 +120,8 @@ const baseInputStyle: CSSProperties = {
 export function TaskCreate() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialScene = getSceneKey(searchParams.get('scene'));
-  const [scene, setScene] = useState<SceneKey>(initialScene);
+  const [searchParams] = useSearchParams();
+  const scene = getSceneKey(searchParams.get('scene'));
   const [showValidation, setShowValidation] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState('');
   const [hoveredSampleIndex, setHoveredSampleIndex] = useState<number | null>(null);
@@ -200,12 +199,6 @@ export function TaskCreate() {
   const pageTitle = id ? '编辑任务' : '创建任务';
   const requiredMissing = !formData.name.trim() || !formData.startDate || !formData.endDate || !isSceneValid(scene, formData);
 
-  const switchScene = (nextScene: SceneKey) => {
-    setScene(nextScene);
-    setShowValidation(false);
-    setSearchParams({ scene: nextScene });
-  };
-
   const submit = (event: FormEvent) => {
     event.preventDefault();
     setShowValidation(true);
@@ -280,38 +273,8 @@ export function TaskCreate() {
       <div style={shellStyle}>
         <button type="button" onClick={() => navigate('/backend/tasks')} style={backButtonStyle}>
           <ArrowLeft size={15} />
-          返回任务列表
+          返回{sceneMeta.label}
         </button>
-
-        <div style={sceneGridStyle}>
-          {sceneOptions.map((item) => {
-            const Icon = item.icon;
-            const active = item.key === scene;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => switchScene(item.key)}
-                style={{
-                  ...sceneButtonStyle,
-                  borderColor: active ? '#2f6fff' : '#dfe5ee',
-                  background: '#ffffff',
-                }}
-              >
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ ...sceneLabelStyle, color: active ? '#2f6fff' : '#172033' }}>{item.label}</span>
-                  <span style={sceneShortStyle}>{item.short}</span>
-                </span>
-                {active && (
-                  <>
-                    <span style={sceneSelectedCornerStyle} />
-                    <span style={sceneSelectedCheckStyle}>✓</span>
-                  </>
-                )}
-              </button>
-            );
-          })}
-        </div>
 
         <form onSubmit={submit} noValidate style={contentGridStyle}>
             <Panel title="基础设置">
@@ -2059,63 +2022,6 @@ const subTitleStyle: CSSProperties = {
   fontSize: 13,
   lineHeight: 1.7,
   color: '#5b6678',
-};
-
-const sceneGridStyle: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-  gap: 10,
-  marginTop: 12,
-};
-
-const sceneButtonStyle: CSSProperties = {
-  minHeight: 78,
-  border: '1px solid',
-  borderRadius: 8,
-  padding: 12,
-  textAlign: 'left',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: 10,
-  position: 'relative',
-  overflow: 'hidden',
-};
-
-const sceneLabelStyle: CSSProperties = {
-  display: 'block',
-  fontSize: 14,
-  fontWeight: 800,
-  lineHeight: 1.2,
-};
-
-const sceneShortStyle: CSSProperties = {
-  display: 'block',
-  marginTop: 5,
-  fontSize: 12,
-  color: '#687386',
-  lineHeight: 1.35,
-};
-
-const sceneSelectedCornerStyle: CSSProperties = {
-  position: 'absolute',
-  right: 0,
-  bottom: 0,
-  width: 0,
-  height: 0,
-  borderStyle: 'solid',
-  borderWidth: '0 0 20px 20px',
-  borderColor: 'transparent transparent #2f6fff transparent',
-};
-
-const sceneSelectedCheckStyle: CSSProperties = {
-  position: 'absolute',
-  right: 3,
-  bottom: 1,
-  fontSize: 12,
-  lineHeight: 1,
-  color: '#fff',
-  fontWeight: 700,
 };
 
 const contentGridStyle: CSSProperties = {
