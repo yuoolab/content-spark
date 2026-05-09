@@ -284,7 +284,7 @@ export function TaskCreate() {
         </button>
 
         {scene === 'follow' && (
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 10, width: '100%' }}>
             <button type="button" onClick={() => setFollowTab('task')} style={followTabButtonStyle(followTab === 'task')}>任务配置</button>
             <button type="button" onClick={() => setFollowTab('account')} style={followTabButtonStyle(followTab === 'account')}>账号管理</button>
           </div>
@@ -353,6 +353,7 @@ export function TaskCreate() {
             </Panel>
           ) : (
             <>
+            {scene !== 'follow' && (
             <Panel title="基础设置">
               {scene !== 'follow' && (
               <Field label="任务名称" required error={showValidation && !formData.name.trim() ? '请输入任务名称' : ''}>
@@ -398,6 +399,7 @@ export function TaskCreate() {
               )}
 
             </Panel>
+            )}
 
             <Panel title={`${sceneMeta.label}玩法`}>
               {scene === 'follow' && (
