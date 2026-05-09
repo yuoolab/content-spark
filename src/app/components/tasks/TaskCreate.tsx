@@ -181,11 +181,8 @@ export function TaskCreate() {
     seedingAllowResubmitAfterReject: false,
     seedingRuleDescription: '',
     contentType: '图文或视频',
-    seedingRewardMode: 'limited' as 'limited' | 'streak',
+    seedingRewardMode: 'limited' as 'limited',
     seedingMaxRewardCount: 10,
-    seedingStreakMinPerDay: 1,
-    seedingStreakDays: 30,
-    seedingStreakAllowBreakDays: 0,
     rankRewardEnabled: true,
     engagementRewardMode: 'single' as 'single' | 'multi',
     engagementRewardTiers: [{
@@ -1264,23 +1261,10 @@ export function TaskCreate() {
                   <Field label="奖励次数">
                     <div style={{ display: 'grid', gap: 10 }}>
                       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-                        {[
-                          { value: 'limited' as const, label: '限制奖励次数' },
-                          { value: 'streak' as const, label: '周期达标奖励' },
-                        ].map((option) => {
-                          const checked = formData.seedingRewardMode === option.value;
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, seedingRewardMode: option.value })}
-                              style={radioLikeButtonStyle(checked)}
-                            >
-                              <span style={radioCircleStyle(checked)} />
-                              {option.label}
-                            </button>
-                          );
-                        })}
+                        <button type="button" style={radioLikeButtonStyle(true)}>
+                          <span style={radioCircleStyle(true)} />
+                          限制奖励次数
+                        </button>
                       </div>
                       {formData.seedingRewardMode === 'limited' && (
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -1295,42 +1279,6 @@ export function TaskCreate() {
                           <span style={{ fontSize: 12, color: '#4b5565' }}>次</span>
                         </div>
                       )}
-                    </div>
-                  </Field>
-                )}
-                {scene === 'seeding' && formData.seedingRewardMode === 'streak' && (
-                  <Field label="周期规则" required>
-                    <div style={{ display: 'grid', gap: 10, width: 'min(540px, 100%)', padding: 10, borderRadius: 8, border: '1px solid #e1e7f0', background: '#fcfdff' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, color: '#4b5565' }}>活动期间每天至少提交</span>
-                        <input
-                          type="number"
-                          min={1}
-                          value={formData.seedingStreakMinPerDay}
-                          onChange={(event) => setFormData({ ...formData, seedingStreakMinPerDay: Math.max(1, Number(event.target.value) || 1) })}
-                          style={{ ...baseInputStyle, width: 72, textAlign: 'center' }}
-                        />
-                        <span style={{ fontSize: 12, color: '#4b5565' }}>条，连续</span>
-                        <input
-                          type="number"
-                          min={1}
-                          value={formData.seedingStreakDays}
-                          onChange={(event) => setFormData({ ...formData, seedingStreakDays: Math.max(1, Number(event.target.value) || 1) })}
-                          style={{ ...baseInputStyle, width: 72, textAlign: 'center' }}
-                        />
-                        <span style={{ fontSize: 12, color: '#4b5565' }}>天可获奖</span>
-                      </div>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, color: '#4b5565' }}>允许断签</span>
-                        <input
-                          type="number"
-                          min={0}
-                          value={formData.seedingStreakAllowBreakDays}
-                          onChange={(event) => setFormData({ ...formData, seedingStreakAllowBreakDays: Math.max(0, Number(event.target.value) || 0) })}
-                          style={{ ...baseInputStyle, width: 72, textAlign: 'center' }}
-                        />
-                        <span style={{ fontSize: 12, color: '#4b5565' }}>天（0 为严格连续）</span>
-                      </div>
                     </div>
                   </Field>
                 )}
