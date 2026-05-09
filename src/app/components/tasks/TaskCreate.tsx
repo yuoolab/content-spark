@@ -17,7 +17,7 @@ import { DateRangePicker } from '../ui/DateRangePicker';
 type SceneKey = 'follow' | 'engagement' | 'seeding' | 'engagement_reward';
 type RewardType = 'points' | 'cash' | 'gift';
 type FollowRewardMode = 'all_accounts' | 'per_account';
-type PrizeType = 'points' | 'gift' | 'wechat_redpacket';
+type PrizeType = 'points' | 'gift' | 'wechat_redpacket' | 'lottery_chance';
 type RedpacketType = 'lucky' | 'fixed';
 
 type PrizeConfig = {
@@ -33,6 +33,8 @@ type PrizeConfig = {
   giftStock: number;
   redpacketCount: number;
   redpacketTotalAmount: number;
+  lotteryActivityId: string;
+  lotteryChanceCount: number;
 };
 
 const sceneOptions: Array<{
@@ -141,6 +143,8 @@ export function TaskCreate() {
     giftStock: 2,
     redpacketCount: 0,
     redpacketTotalAmount: 0,
+    lotteryActivityId: '',
+    lotteryChanceCount: 1,
   });
   const [formData, setFormData] = useState({
     name: '',
@@ -229,6 +233,8 @@ export function TaskCreate() {
       giftStock: 2,
       redpacketCount: 0,
       redpacketTotalAmount: 0,
+      lotteryActivityId: '',
+      lotteryChanceCount: 1,
     });
     setShowPrizeModal(true);
   };
@@ -245,6 +251,15 @@ export function TaskCreate() {
     if (prizeForm.prizeType === 'wechat_redpacket') {
       if (prizeForm.redpacketCount < 1 || prizeForm.redpacketTotalAmount <= 0) {
         setPrizeError('请输入红包个数和总金额');
+        return;
+      }
+    } else if (prizeForm.prizeType === 'lottery_chance') {
+      if (!prizeForm.lotteryActivityId) {
+        setPrizeError('请选择转盘抽奖活动');
+        return;
+      }
+      if (prizeForm.lotteryChanceCount <= 0) {
+        setPrizeError('请输入发放机会次数');
         return;
       }
     } else if (prizeForm.prizeType !== 'gift' && prizeForm.rewardAmount <= 0) {
@@ -988,7 +1003,7 @@ export function TaskCreate() {
                         )}
                       </div>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 3 张。
+                        可上传内容示例图，方便用户参考，最多 3 张。
                       </span>
                     </div>
                   </Field>
@@ -1191,7 +1206,7 @@ export function TaskCreate() {
                         )}
                       </div>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 3 张。
+                        可上传内容示例图，方便用户参考，最多 3 张。
                       </span>
                     </div>
                   </Field>
@@ -1595,6 +1610,8 @@ export function TaskCreate() {
                           <div>奖品名称：{selectedPrize.prizeName}</div>
                           {selectedPrize.prizeType === 'wechat_redpacket' ? (
                             <div>红包总额：{selectedPrize.redpacketTotalAmount} 元 / {selectedPrize.redpacketCount} 个</div>
+                          ) : selectedPrize.prizeType === 'lottery_chance' ? (
+                            <div>抽奖活动：{selectedPrize.lotteryActivityId}，发放 {selectedPrize.lotteryChanceCount} 次机会</div>
                           ) : selectedPrize.prizeType !== 'gift' ? (
                             <div>奖励额度：{selectedPrize.rewardAmount} {getPrizeUnit(selectedPrize.prizeType)}</div>
                           ) : (
@@ -1702,6 +1719,7 @@ export function TaskCreate() {
                       { value: 'points' as PrizeType, label: '积分' },
                       { value: 'gift' as PrizeType, label: '赠品' },
                       { value: 'wechat_redpacket' as PrizeType, label: '微信红包' },
+                      { value: 'lottery_chance' as PrizeType, label: '抽奖机会' },
                     ].map((item) => (
                       <button
                         key={item.value}
@@ -1786,7 +1804,37 @@ export function TaskCreate() {
                   </>
                 )}
 
-                {prizeForm.prizeType !== 'gift' && prizeForm.prizeType !== 'wechat_redpacket' && (
+                {prizeForm.prizeType === 'lottery_chance' && (
+                  <>
+                    <Field label="转盘抽奖活动" required>
+                      <select
+                        value={prizeForm.lotteryActivityId}
+                        onChange={(event) => setPrizeForm({ ...prizeForm, lotteryActivityId: event.target.value })}
+                        style={baseInputStyle}
+                      >
+                        <option value="">请选择活动</option>
+                        <option value="lottery-new-user">新客抽奖转盘</option>
+                        <option value="lottery-seeding-booster">种草助推转盘</option>
+                        <option value="lottery-festival">节日福利转盘</option>
+                      </select>
+                    </Field>
+                    <Field label="发放机会次数" required>
+                      <div style={inlineInputWrapStyle}>
+                        <input
+                          type="number"
+                          min={1}
+                          value={prizeForm.lotteryChanceCount || ''}
+                          onChange={(event) => setPrizeForm({ ...prizeForm, lotteryChanceCount: Number(event.target.value) || 0 })}
+                          placeholder="请输入"
+                          style={baseInputStyle}
+                        />
+                        <span>次</span>
+                      </div>
+                    </Field>
+                  </>
+                )}
+
+                {prizeForm.prizeType !== 'gift' && prizeForm.prizeType !== 'wechat_redpacket' && prizeForm.prizeType !== 'lottery_chance' && (
                   <Field label="奖励额度" required>
                     <div style={inlineInputWrapStyle}>
                       <input
@@ -1856,6 +1904,7 @@ export function TaskCreate() {
 function getPrizeTypeLabel(type: PrizeType) {
   if (type === 'points') return '积分';
   if (type === 'gift') return '赠品';
+  if (type === 'lottery_chance') return '抽奖机会';
   return '微信红包';
 }
 
