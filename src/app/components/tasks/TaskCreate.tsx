@@ -1041,24 +1041,26 @@ export function TaskCreate() {
                 )}
                 {scene === 'seeding' && (
                   <Field label="奖励次数">
-                    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {[
-                        { value: 'limited' as const, label: '限制奖励次数' },
-                        { value: 'streak' as const, label: '周期达标奖励' },
-                      ].map((option) => {
-                        const checked = formData.seedingRewardMode === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, seedingRewardMode: option.value })}
-                            style={radioLikeButtonStyle(checked)}
-                          >
-                            <span style={radioCircleStyle(checked)} />
-                            {option.label}
-                          </button>
-                        );
-                      })}
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {[
+                          { value: 'limited' as const, label: '限制奖励次数' },
+                          { value: 'streak' as const, label: '周期达标奖励' },
+                        ].map((option) => {
+                          const checked = formData.seedingRewardMode === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, seedingRewardMode: option.value })}
+                              style={radioLikeButtonStyle(checked)}
+                            >
+                              <span style={radioCircleStyle(checked)} />
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                       {formData.seedingRewardMode === 'limited' && (
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 12, color: '#4b5565' }}>活动中最多发放</span>
