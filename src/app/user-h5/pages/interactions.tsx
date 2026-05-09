@@ -6,15 +6,9 @@ import { useUserH5 } from "../state";
 import { Card, Container, Pill, SectionTitle } from "../shared";
 
 export function SubmissionsPage() {
-  const { submissions, tasks, rewards } = useUserH5();
-  const navigate = useNavigate();
+  const { submissions, rewards } = useUserH5();
   const [rejectReasonModal, setRejectReasonModal] = useState<{ title: string; reason: string } | null>(null);
-  const lotterySubmissionIds = useMemo(() => new Set(["sub-2", "sub-7"]), []);
   const [status, setStatus] = useState<"全部" | "待审核" | "已通过" | "已拒绝">("全部");
-  const taskNameMap = useMemo(
-    () => new Map(tasks.map((task) => [task.id, task.name])),
-    [tasks]
-  );
   const rewardMap = useMemo(
     () => new Map(rewards.map((reward) => [reward.submissionId, reward])),
     [rewards]
@@ -40,16 +34,12 @@ export function SubmissionsPage() {
           </Card>
         ) : (
           filtered.map((item) => (
-            <button
+            <div
               key={item.id}
-              type="button"
-              onClick={() => navigate(`/tasks/${item.taskId}`)}
               style={{
                 padding: 0,
-                border: "none",
                 width: "100%",
                 textAlign: "left",
-                cursor: "pointer",
                 background: "transparent",
               }}
             >
@@ -68,26 +58,6 @@ export function SubmissionsPage() {
                     </div>
                     <div
                       style={{
-                        marginTop: 8,
-                        padding: "10px 12px",
-                        borderRadius: 14,
-                        border: "1px solid rgba(226,232,240,0.9)",
-                        background: "rgba(247,250,255,0.95)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 10,
-                      }}
-                    >
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 400, letterSpacing: "0.06em" }}>关联任务</div>
-                        <div style={{ marginTop: 4, fontSize: 13, color: "#334155", fontWeight: 700, lineHeight: 1.45 }}>
-                          {taskNameMap.get(item.taskId) ?? "任务已下线"}
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      style={{
                         marginTop: 10,
                         display: "flex",
                         alignItems: "center",
@@ -101,40 +71,7 @@ export function SubmissionsPage() {
                       <div style={{ minWidth: 0 }}>提交时间 {item.submitTime}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                         {item.status === "已通过" && (
-                          lotterySubmissionIds.has(item.id) ? (
-                            <div
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 0,
-                                padding: 0,
-                                borderRadius: 999,
-                                background: "transparent",
-                                border: "none",
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  event.stopPropagation();
-                                  navigate(`/tasks/${item.taskId}`);
-                                }}
-                                style={{
-                                  height: 28,
-                                  padding: "0 10px",
-                                  borderRadius: 999,
-                                  border: "none",
-                                  background: "#2474ff",
-                                  color: "#fff",
-                                  fontSize: 12, fontWeight: 400,
-                                  cursor: "pointer",
-                                }}
-                              >
-                                去抽奖
-                              </button>
-                            </div>
-                          ) : rewardMap.get(item.id)?.amount ? (
+                          rewardMap.get(item.id)?.amount ? (
                             <Pill tone="blue">{rewardMap.get(item.id)?.amount} 星云币</Pill>
                           ) : (
                             <Pill tone="gray">暂无奖励</Pill>
@@ -144,15 +81,12 @@ export function SubmissionsPage() {
                           <span
                             role="button"
                             tabIndex={0}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
+                            onClick={() => {
                               setRejectReasonModal({ title: item.title, reason: item.rejectReason as string });
                             }}
                             onKeyDown={(event) => {
                               if (event.key === "Enter" || event.key === " ") {
                                 event.preventDefault();
-                                event.stopPropagation();
                                 setRejectReasonModal({ title: item.title, reason: item.rejectReason as string });
                               }
                             }}
@@ -166,7 +100,7 @@ export function SubmissionsPage() {
                   </div>
                 </div>
               </Card>
-            </button>
+            </div>
           ))
         )}
       </div>
