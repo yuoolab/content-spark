@@ -126,6 +126,7 @@ export function TaskCreate() {
   const [previewImageUrl, setPreviewImageUrl] = useState('');
   const [hoveredSampleIndex, setHoveredSampleIndex] = useState<number | null>(null);
   const [showPrizeModal, setShowPrizeModal] = useState(false);
+  const [followTab, setFollowTab] = useState<'task' | 'account'>('task');
   const [prizeError, setPrizeError] = useState('');
   const [selectedPrize, setSelectedPrize] = useState<PrizeConfig | null>(null);
   const [editingTierIndex, setEditingTierIndex] = useState<number | null>(null);
@@ -158,6 +159,10 @@ export function TaskCreate() {
     showEnabled: true,
     maxPerUser: 1,
     followTargets: [{ platform: '小红书', account: '', sampleImage: null as File | null, sampleImagePreview: '', guideText: '' }],
+    followManagedAccounts: [
+      { id: 'fa_1', platform: '小红书', accountName: '品牌官方小红书' },
+      { id: 'fa_2', platform: '抖音', accountName: '品牌官方抖音号' },
+    ] as Array<{ id: string; platform: string; accountName: string }>,
     followRuleDescription: '',
     engagementPlatform: '小红书',
     contentUrl: '',
@@ -197,7 +202,9 @@ export function TaskCreate() {
 
   const sceneMeta = sceneOptions.find((item) => item.key === scene) ?? sceneOptions[0];
   const pageTitle = id ? '编辑任务' : '创建任务';
-  const requiredMissing = !formData.name.trim() || !formData.startDate || !formData.endDate || !isSceneValid(scene, formData);
+  const requiredMissing = scene === 'follow'
+    ? !isSceneValid(scene, formData)
+    : !formData.name.trim() || !formData.startDate || !formData.endDate || !isSceneValid(scene, formData);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -276,8 +283,78 @@ export function TaskCreate() {
           创建{sceneMeta.label}
         </button>
 
+        {scene === 'follow' && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <button type="button" onClick={() => setFollowTab('task')} style={followTabButtonStyle(followTab === 'task')}>任务配置</button>
+            <button type="button" onClick={() => setFollowTab('account')} style={followTabButtonStyle(followTab === 'account')}>账号管理</button>
+          </div>
+        )}
         <form onSubmit={submit} noValidate style={contentGridStyle}>
+          {scene === 'follow' && followTab === 'account' ? (
+            <Panel title="账号管理">
+              <Field label="平台账号维护">
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {formData.followManagedAccounts.map((item, idx) => (
+                    <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '160px 280px 32px', gap: 8, alignItems: 'center' }}>
+                      <select
+                        value={item.platform}
+                        onChange={(event) => {
+                          const next = [...formData.followManagedAccounts];
+                          next[idx] = { ...next[idx], platform: event.target.value };
+                          setFormData({ ...formData, followManagedAccounts: next });
+                        }}
+                        style={baseInputStyle}
+                      >
+                        {followPlatformOptions.map((platform) => <option key={platform}>{platform}</option>)}
+                      </select>
+                      <input
+                        value={item.accountName}
+                        onChange={(event) => {
+                          const next = [...formData.followManagedAccounts];
+                          next[idx] = { ...next[idx], accountName: event.target.value.slice(0, 20) };
+                          setFormData({ ...formData, followManagedAccounts: next });
+                        }}
+                        placeholder="请输入账号名称"
+                        style={baseInputStyle}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (formData.followManagedAccounts.length <= 1) return;
+                          const next = formData.followManagedAccounts.filter((_, i) => i !== idx);
+                          setFormData({ ...formData, followManagedAccounts: next });
+                        }}
+                        disabled={formData.followManagedAccounts.length <= 1}
+                        style={removeIconButtonStyle(formData.followManagedAccounts.length <= 1)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        followManagedAccounts:
+                          formData.followManagedAccounts.length >= 20
+                            ? formData.followManagedAccounts
+                            : [...formData.followManagedAccounts, { id: `fa_${Date.now()}`, platform: '小红书', accountName: '' }],
+                      })
+                    }
+                    disabled={formData.followManagedAccounts.length >= 20}
+                    style={addInlineButtonStyle(formData.followManagedAccounts.length >= 20)}
+                  >
+                    <Plus size={13} />
+                    新增账号
+                  </button>
+                </div>
+              </Field>
+            </Panel>
+          ) : (
+            <>
             <Panel title="基础设置">
+              {scene !== 'follow' && (
               <Field label="任务名称" required error={showValidation && !formData.name.trim() ? '请输入任务名称' : ''}>
                 <div style={{ position: 'relative', width: 'min(540px, 100%)' }}>
                   <input
@@ -290,6 +367,7 @@ export function TaskCreate() {
                   <span style={{ position: 'absolute', right: 10, bottom: 7, fontSize: 11, color: '#9aa4b2', pointerEvents: 'none' }}>{formData.name.length}/20</span>
                 </div>
               </Field>
+              )}
 
               <Field label="任务描述">
                 <div style={{ position: 'relative', width: 'min(540px, 100%)' }}>
@@ -306,6 +384,7 @@ export function TaskCreate() {
                 </div>
               </Field>
 
+              {scene !== 'follow' && (
               <Field label="任务时间" required error={showValidation && (!formData.startDate || !formData.endDate) ? '请选择任务时间' : ''}>
                 <div style={dateWrapStyle(showValidation && (!formData.startDate || !formData.endDate))}>
                   <DateRangePicker
@@ -316,6 +395,7 @@ export function TaskCreate() {
                   />
                 </div>
               </Field>
+              )}
 
             </Panel>
 
@@ -357,7 +437,7 @@ export function TaskCreate() {
                             >
                               {followPlatformOptions.map((platform) => <option key={platform}>{platform}</option>)}
                             </select>
-                            <input
+                            <select
                               value={target.account}
                               onChange={(event) =>
                                 setFormData({
@@ -367,10 +447,17 @@ export function TaskCreate() {
                                   ),
                                 })
                               }
-                              placeholder="输入目标账号（昵称 / ID）"
-                              maxLength={15}
                               style={{ ...inputStyle(showValidation && !target.account.trim()), width: '100%' }}
-                            />
+                            >
+                              <option value="">请选择账号</option>
+                              {formData.followManagedAccounts
+                                .filter((item) => item.platform === target.platform)
+                                .map((item) => (
+                                  <option key={item.id} value={item.accountName}>
+                                    {item.accountName}
+                                  </option>
+                                ))}
+                            </select>
                             <input
                               value={target.guideText}
                               onChange={(event) =>
@@ -1519,6 +1606,8 @@ export function TaskCreate() {
                 )}
               </SceneFields>
             </Panel>
+            </>
+          )}
         </form>
         {showValidation && requiredMissing && (
           <div style={errorBoxStyle}>还有必填项未完成，请检查红色提示字段。</div>
@@ -1801,6 +1890,55 @@ function getPrizeTypeLabel(type: PrizeType) {
   if (type === 'gift') return '赠品';
   if (type === 'lottery_chance') return '抽奖机会';
   return '微信红包';
+}
+
+function followTabButtonStyle(active: boolean): CSSProperties {
+  return {
+    height: 32,
+    padding: '0 14px',
+    borderRadius: 999,
+    border: active ? '1px solid #1d4ed8' : '1px solid #d8dee8',
+    background: active ? 'rgba(29,78,216,0.10)' : '#fff',
+    color: active ? '#1d4ed8' : '#475569',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: 'pointer',
+  };
+}
+
+function removeIconButtonStyle(disabled: boolean): CSSProperties {
+  return {
+    width: 32,
+    height: 32,
+    border: '1px solid #d8dee8',
+    borderRadius: 6,
+    background: disabled ? '#f3f4f6' : '#fff',
+    color: disabled ? '#a1a8b3' : '#6b7280',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 0,
+    lineHeight: 1,
+  };
+}
+
+function addInlineButtonStyle(disabled: boolean): CSSProperties {
+  return {
+    height: 32,
+    width: 'fit-content',
+    padding: '0 10px',
+    borderRadius: 6,
+    border: '1px dashed #cbd5e1',
+    background: '#fff',
+    color: disabled ? '#a1a8b3' : '#1d4ed8',
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+  };
 }
 
 function getPrizeUnit(type: PrizeType) {
