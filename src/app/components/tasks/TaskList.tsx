@@ -39,7 +39,6 @@ const PLATFORM_COLOR: Record<string, { bg: string; color: string }> = {
 const PLATFORM_OPTIONS = [
   { value: '小红书', label: '小红书' },
   { value: '抖音', label: '抖音' },
-  { value: '哔哩哔哩', label: '哔哩哔哩' },
 ] as const;
 
 const SCENE_OPTIONS: Array<{

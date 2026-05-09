@@ -89,7 +89,7 @@ const sceneOptions: Array<{
   },
 ];
 
-const followPlatformOptions = ['小红书', '抖音', '快手', '视频号'];
+const followPlatformOptions = ['小红书', '抖音'];
 const rewardOptions: Array<{ value: RewardType; label: string }> = [
   { value: 'points', label: '积分' },
   { value: 'cash', label: '现金红包' },

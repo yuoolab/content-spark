@@ -81,7 +81,7 @@ const SCENE_OPTIONS: { value: string; label: string; color: string; bg: string }
   { value: 'engagement_reward', label: '效果种草', color: '#7c3aed', bg: '#f5f3ff' },
 ];
 
-const PLATFORM_OPTIONS = ['小红书', '抖音', '哔哩哔哩'];
+const PLATFORM_OPTIONS = ['小红书', '抖音'];
 
 const AVATAR_COLORS = [
   'linear-gradient(135deg, #667eea, #764ba2)',
