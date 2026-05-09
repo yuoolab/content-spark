@@ -175,12 +175,11 @@ export function TaskCreate() {
     seedingAllowResubmitAfterReject: false,
     seedingRuleDescription: '',
     contentType: '图文或视频',
-    seedingRewardMode: 'unlimited' as 'unlimited' | 'limited' | 'streak',
+    seedingRewardMode: 'limited' as 'limited' | 'streak',
     seedingMaxRewardCount: 10,
     seedingStreakMinPerDay: 1,
     seedingStreakDays: 30,
     seedingStreakAllowBreakDays: 0,
-    seedingStreakRewardFrequency: 'once' as 'once' | 'repeat',
     rankRewardEnabled: true,
     engagementRewardMode: 'single' as 'single' | 'multi',
     engagementRewardTiers: [{
@@ -1044,7 +1043,6 @@ export function TaskCreate() {
                   <Field label="奖励次数">
                     <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
                       {[
-                        { value: 'unlimited' as const, label: '每条内容都发放' },
                         { value: 'limited' as const, label: '限制奖励次数' },
                         { value: 'streak' as const, label: '周期达标奖励' },
                       ].map((option) => {
@@ -1109,26 +1107,6 @@ export function TaskCreate() {
                           style={{ ...baseInputStyle, width: 72, textAlign: 'center' }}
                         />
                         <span style={{ fontSize: 12, color: '#4b5565' }}>天（0 为严格连续）</span>
-                      </div>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, color: '#4b5565' }}>达标发奖</span>
-                        {[
-                          { value: 'once' as const, label: '仅发放一次' },
-                          { value: 'repeat' as const, label: '每达标一次发放' },
-                        ].map((option) => {
-                          const checked = formData.seedingStreakRewardFrequency === option.value;
-                          return (
-                            <button
-                              key={option.value}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, seedingStreakRewardFrequency: option.value })}
-                              style={radioLikeButtonStyle(checked)}
-                            >
-                              <span style={radioCircleStyle(checked)} />
-                              {option.label}
-                            </button>
-                          );
-                        })}
                       </div>
                     </div>
                   </Field>
