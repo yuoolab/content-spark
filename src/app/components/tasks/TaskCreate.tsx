@@ -175,8 +175,12 @@ export function TaskCreate() {
     seedingAllowResubmitAfterReject: false,
     seedingRuleDescription: '',
     contentType: '图文或视频',
-    seedingRewardMode: 'unlimited' as 'unlimited' | 'limited',
+    seedingRewardMode: 'unlimited' as 'unlimited' | 'limited' | 'streak',
     seedingMaxRewardCount: 10,
+    seedingStreakMinPerDay: 1,
+    seedingStreakDays: 30,
+    seedingStreakAllowBreakDays: 0,
+    seedingStreakRewardFrequency: 'once' as 'once' | 'repeat',
     rankRewardEnabled: true,
     engagementRewardMode: 'single' as 'single' | 'multi',
     engagementRewardTiers: [{
@@ -771,7 +775,7 @@ export function TaskCreate() {
                         </label>}
                       </div>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 1 张。
+                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 3 张。
                       </span>
                     </div>
                   </Field>
@@ -1042,6 +1046,7 @@ export function TaskCreate() {
                       {[
                         { value: 'unlimited' as const, label: '每条内容都发放' },
                         { value: 'limited' as const, label: '限制奖励次数' },
+                        { value: 'streak' as const, label: '周期达标奖励' },
                       ].map((option) => {
                         const checked = formData.seedingRewardMode === option.value;
                         return (
@@ -1069,6 +1074,62 @@ export function TaskCreate() {
                           <span style={{ fontSize: 12, color: '#4b5565' }}>次</span>
                         </div>
                       )}
+                    </div>
+                  </Field>
+                )}
+                {scene === 'seeding' && formData.seedingRewardMode === 'streak' && (
+                  <Field label="周期规则" required>
+                    <div style={{ display: 'grid', gap: 10, width: 'min(540px, 100%)', padding: 10, borderRadius: 8, border: '1px solid #e1e7f0', background: '#fcfdff' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, color: '#4b5565' }}>活动期间每天至少提交</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={formData.seedingStreakMinPerDay}
+                          onChange={(event) => setFormData({ ...formData, seedingStreakMinPerDay: Math.max(1, Number(event.target.value) || 1) })}
+                          style={{ ...baseInputStyle, width: 72, textAlign: 'center' }}
+                        />
+                        <span style={{ fontSize: 12, color: '#4b5565' }}>条，连续</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={formData.seedingStreakDays}
+                          onChange={(event) => setFormData({ ...formData, seedingStreakDays: Math.max(1, Number(event.target.value) || 1) })}
+                          style={{ ...baseInputStyle, width: 72, textAlign: 'center' }}
+                        />
+                        <span style={{ fontSize: 12, color: '#4b5565' }}>天可获奖</span>
+                      </div>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, color: '#4b5565' }}>允许断签</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={formData.seedingStreakAllowBreakDays}
+                          onChange={(event) => setFormData({ ...formData, seedingStreakAllowBreakDays: Math.max(0, Number(event.target.value) || 0) })}
+                          style={{ ...baseInputStyle, width: 72, textAlign: 'center' }}
+                        />
+                        <span style={{ fontSize: 12, color: '#4b5565' }}>天（0 为严格连续）</span>
+                      </div>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12, color: '#4b5565' }}>达标发奖</span>
+                        {[
+                          { value: 'once' as const, label: '仅发放一次' },
+                          { value: 'repeat' as const, label: '每达标一次发放' },
+                        ].map((option) => {
+                          const checked = formData.seedingStreakRewardFrequency === option.value;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, seedingStreakRewardFrequency: option.value })}
+                              style={radioLikeButtonStyle(checked)}
+                            >
+                              <span style={radioCircleStyle(checked)} />
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </Field>
                 )}

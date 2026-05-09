@@ -694,7 +694,15 @@ function SceneTaskDetail({
             <div style={{ display: "grid", gap: 10 }}>
               <InfoRow icon={Globe} label="发布平台" value={task.platform.join(" / ")} />
               <InfoRow icon={FileText} label="创作方向" value={task.contentType} />
-              <InfoRow icon={Send} label="奖励次数" value={`每人最多奖励 ${task.maxPerUser} 次`} />
+              <InfoRow
+                icon={Send}
+                label={task.seedingRewardMode === "streak" ? "奖励周期" : "奖励次数"}
+                value={
+                  task.seedingRewardMode === "streak" && task.seedingStreakConfig
+                    ? `每日${task.seedingStreakConfig.minPerDay}条，连续${task.seedingStreakConfig.streakDays}天`
+                    : `每人最多奖励 ${task.maxPerUser} 次`
+                }
+              />
               <div style={sceneTagCopyRowStyle}>
                 <div style={sceneTagCopyRowHeadStyle}>
                   <div style={sceneTagCopyRowTitleStyle}>
@@ -1235,6 +1243,12 @@ function getSceneRules(task: Task, scene: DetailScene) {
     `需在 ${task.platform.join(" / ")} 发布符合要求的原创内容并提交公开链接。`,
     ...(task.hashtags.length > 0 ? [`内容需包含话题 ${task.hashtags.join("、")}。`] : []),
     ...(task.keywords.length > 0 ? [`建议围绕 ${task.keywords.join("、")} 等关键词展开创作。`] : []),
+    ...(task.seedingRewardMode === "streak" && task.seedingStreakConfig
+      ? [
+          `活动期间内，每天至少提交 ${task.seedingStreakConfig.minPerDay} 条内容，连续 ${task.seedingStreakConfig.streakDays} 天可获得奖励。`,
+          `当前连续进度：${task.seedingStreakConfig.currentStreakDays ?? 0}/${task.seedingStreakConfig.streakDays} 天。`,
+        ]
+      : []),
     `每位用户最多可提交 ${task.maxPerUser} 条内容，审核通过后进入奖励发放流程。`,
   ];
 }

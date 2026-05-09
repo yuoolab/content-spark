@@ -98,6 +98,15 @@ export interface Task {
   commentKeyword?: string;
   engagementSampleImage?: string;
   engagementProofDescription?: string;
+  seedingRewardMode?: "unlimited" | "limited" | "streak";
+  seedingMaxRewardCount?: number;
+  seedingStreakConfig?: {
+    minPerDay: number;
+    streakDays: number;
+    allowBreakDays: number;
+    rewardFrequency: "once" | "repeat";
+    currentStreakDays?: number;
+  };
 }
 
 export interface AccountBinding {
@@ -314,6 +323,14 @@ const initialTasks: Task[] = [
     maxPerUser: 3,
     contentType: "不限",
     description: "围绕春季新品体验、真实使用感受、开箱测评进行内容创作。",
+    seedingRewardMode: "streak",
+    seedingStreakConfig: {
+      minPerDay: 1,
+      streakDays: 30,
+      allowBreakDays: 0,
+      rewardFrequency: "once",
+      currentStreakDays: 12,
+    },
     rewardSpecs: [
       {
         id: "task-1-base",
