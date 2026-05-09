@@ -1,6 +1,9 @@
 import { Link, useNavigate } from 'react-router';
 import {
+  AtSign,
+  BarChart3,
   Heart,
+  Sparkles,
   Check,
   Search,
 } from 'lucide-react';
@@ -47,6 +50,20 @@ const SCENE_OPTIONS: Array<{
   bg: string;
 }> = [
   { value: 'engagement', label: '内容互动', desc: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推。', playbook: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推', icon: Heart, color: '#c2410c', bg: '#fff7ed' },
+];
+
+const SCENE_CARD_OPTIONS: Array<{
+  value: SceneKey;
+  label: string;
+  playbook: string;
+  icon: ElementType;
+  color: string;
+  bg: string;
+}> = [
+  { value: 'follow', label: '账号加粉', playbook: '引导关注官方社媒账号，适合拉新关注、账号矩阵导流等场景', icon: AtSign, color: '#0f766e', bg: '#ecfdf5' },
+  { value: 'engagement', label: '内容互动', playbook: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推', icon: Heart, color: '#c2410c', bg: '#fff7ed' },
+  { value: 'seeding', label: '内容种草', playbook: '发布原创内容并回传链接，适合征集原创笔记、短视频和晒单内容', icon: Sparkles, color: '#1d4ed8', bg: '#eff6ff' },
+  { value: 'engagement_reward', label: '效果种草', playbook: '发布种草内容并达到指定互动量得奖励，适用优质内容筛选、KOC潜力挖掘等场景', icon: BarChart3, color: '#7c3aed', bg: '#f5f3ff' },
 ];
 
 function normalizePlatform(platform: string) {
@@ -426,7 +443,7 @@ export function TaskList() {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px' }}>
-            {SCENE_OPTIONS.map((scene) => {
+            {SCENE_CARD_OPTIONS.map((scene) => {
               const Icon = scene.icon;
               return (
                 <div
