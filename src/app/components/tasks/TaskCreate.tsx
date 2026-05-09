@@ -294,8 +294,18 @@ export function TaskCreate() {
               <Field label="平台账号维护">
                 <div style={{ display: 'grid', gap: 8 }}>
                   {formData.followManagedAccounts.map((item, idx) => (
-                    <div key={item.id} style={{ display: 'grid', gap: 8 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '160px 280px 32px', gap: 8, alignItems: 'center' }}>
+                    <div
+                      key={item.id}
+                      style={{
+                        display: 'grid',
+                        gap: 8,
+                        padding: 10,
+                        border: '1px solid #e2e8f0',
+                        borderRadius: 10,
+                        background: '#fcfdff',
+                      }}
+                    >
+                      <div style={{ display: 'grid', gridTemplateColumns: '140px 240px 100px 32px', gap: 8, alignItems: 'center' }}>
                       <select
                         value={item.platform}
                         onChange={(event) => {
@@ -317,6 +327,43 @@ export function TaskCreate() {
                         placeholder="请输入账号名称"
                         style={baseInputStyle}
                       />
+                      <input
+                        id={`follow-managed-profile-${item.id}`}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(event) => {
+                          const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+                          const next = [...formData.followManagedAccounts];
+                          const current = next[idx];
+                          if (current.profileImagePreview) URL.revokeObjectURL(current.profileImagePreview);
+                          next[idx] = {
+                            ...current,
+                            profileImage: file,
+                            profileImagePreview: file ? URL.createObjectURL(file) : '',
+                          };
+                          setFormData({ ...formData, followManagedAccounts: next });
+                          event.target.value = '';
+                        }}
+                      />
+                      <label
+                        htmlFor={`follow-managed-profile-${item.id}`}
+                        style={{
+                          height: 32,
+                          border: '1px dashed #cbd5e1',
+                          borderRadius: 6,
+                          background: '#fff',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#4b5565',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      >
+                        上传截图
+                      </label>
                       <button
                         type="button"
                         onClick={() => {
@@ -330,27 +377,7 @@ export function TaskCreate() {
                         <Trash2 size={14} />
                       </button>
                       </div>
-                      <div style={{ display: 'grid', gap: 6 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#172033' }}>账号主页截图</span>
-                        <input
-                          id={`follow-managed-profile-${item.id}`}
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={(event) => {
-                            const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
-                            const next = [...formData.followManagedAccounts];
-                            const current = next[idx];
-                            if (current.profileImagePreview) URL.revokeObjectURL(current.profileImagePreview);
-                            next[idx] = {
-                              ...current,
-                              profileImage: file,
-                              profileImagePreview: file ? URL.createObjectURL(file) : '',
-                            };
-                            setFormData({ ...formData, followManagedAccounts: next });
-                            event.target.value = '';
-                          }}
-                        />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {item.profileImagePreview ? (
                           <div
                             style={{
@@ -401,26 +428,7 @@ export function TaskCreate() {
                             </button>
                           </div>
                         ) : (
-                          <label
-                            htmlFor={`follow-managed-profile-${item.id}`}
-                            style={{
-                              width: 72,
-                              height: 72,
-                              border: '1px dashed #cbd5e1',
-                              borderRadius: 6,
-                              background: '#fff',
-                              display: 'inline-flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: 4,
-                              color: '#4b5565',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <Plus size={20} color="#8b95a7" />
-                            <span style={{ fontSize: 11, fontWeight: 600 }}>上传图片</span>
-                          </label>
+                          <span style={{ fontSize: 12, color: '#94a3b8' }}>未上传主页截图</span>
                         )}
                       </div>
                     </div>
