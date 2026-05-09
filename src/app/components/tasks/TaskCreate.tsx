@@ -124,7 +124,6 @@ export function TaskCreate() {
   const scene = getSceneKey(searchParams.get('scene'));
   const [showValidation, setShowValidation] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState('');
-  const [hoveredSampleIndex, setHoveredSampleIndex] = useState<number | null>(null);
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [followTab, setFollowTab] = useState<'task' | 'account'>('task');
   const [prizeError, setPrizeError] = useState('');
@@ -502,7 +501,7 @@ export function TaskCreate() {
                   <Field
                     label="关注账号列表"
                     required
-                    error={showValidation && hasFollowTargetError(formData.followTargets) ? '请完整填写平台、目标账号和上传引导文案' : ''}
+                    error={showValidation && hasFollowTargetError(formData.followTargets) ? '请完整填写目标账号和上传引导文案' : ''}
                   >
                     <div style={{ display: 'grid', gap: 8 }}>
                       {formData.followTargets.map((target, index) => (
@@ -519,21 +518,7 @@ export function TaskCreate() {
                             maxWidth: '100%',
                           }}
                         >
-                          <div style={{ display: 'grid', gridTemplateColumns: '160px 180px 350px 32px', gap: 8, alignItems: 'center' }}>
-                            <select
-                              value={target.platform}
-                              onChange={(event) =>
-                                setFormData({
-                                  ...formData,
-                                  followTargets: formData.followTargets.map((item, itemIndex) =>
-                                    itemIndex === index ? { ...item, platform: event.target.value } : item
-                                  ),
-                                })
-                              }
-                              style={baseInputStyle}
-                            >
-                              {followPlatformOptions.map((platform) => <option key={platform}>{platform}</option>)}
-                            </select>
+                          <div style={{ display: 'grid', gridTemplateColumns: '340px 350px 32px', gap: 8, alignItems: 'center' }}>
                             <select
                               value={target.account}
                               onChange={(event) =>
@@ -547,13 +532,11 @@ export function TaskCreate() {
                               style={{ ...inputStyle(showValidation && !target.account.trim()), width: '100%' }}
                             >
                               <option value="">请选择账号</option>
-                              {formData.followManagedAccounts
-                                .filter((item) => item.platform === target.platform)
-                                .map((item) => (
+                              {formData.followManagedAccounts.map((item) => (
                                   <option key={item.id} value={item.accountName}>
-                                    {item.accountName}
+                                    {item.platform} - {item.accountName}
                                   </option>
-                                ))}
+                              ))}
                             </select>
                             <input
                               value={target.guideText}
@@ -577,13 +560,7 @@ export function TaskCreate() {
                                   followTargets:
                                     formData.followTargets.length === 1
                                       ? formData.followTargets
-                                      : formData.followTargets.filter((_, itemIndex) => {
-                                          const keep = itemIndex !== index;
-                                          if (!keep && formData.followTargets[itemIndex].sampleImagePreview) {
-                                            URL.revokeObjectURL(formData.followTargets[itemIndex].sampleImagePreview);
-                                          }
-                                          return keep;
-                                        }),
+                                      : formData.followTargets.filter((_, itemIndex) => itemIndex !== index),
                                 })
                               }
                               disabled={formData.followTargets.length === 1}
@@ -604,111 +581,6 @@ export function TaskCreate() {
                             >
                               <Trash2 size={14} />
                             </button>
-                          </div>
-                          <div style={{ display: 'grid', gap: 6 }}>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: '#172033' }}>关注示例图</span>
-                            <input
-                              id={`follow-sample-image-${index}`}
-                              type="file"
-                              accept="image/*"
-                              onChange={(event) => {
-                                const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
-                                setFormData({
-                                  ...formData,
-                                  followTargets: formData.followTargets.map((item, itemIndex) =>
-                                    itemIndex === index
-                                      ? (() => {
-                                          if (item.sampleImagePreview) URL.revokeObjectURL(item.sampleImagePreview);
-                                          const preview = file ? URL.createObjectURL(file) : '';
-                                          return { ...item, sampleImage: file, sampleImagePreview: preview };
-                                        })()
-                                      : item
-                                  ),
-                                });
-                              }}
-                              style={{ display: 'none' }}
-                            />
-                            {target.sampleImagePreview ? (
-                              <div
-                                style={{
-                                  width: 70,
-                                  height: 70,
-                                  border: '1px dashed #cbd5e1',
-                                  borderRadius: 4,
-                                  background: '#fff',
-                                  position: 'relative',
-                                  overflow: 'hidden',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                }}
-                                onMouseEnter={() => setHoveredSampleIndex(index)}
-                                onMouseLeave={() => setHoveredSampleIndex((current) => (current === index ? null : current))}
-                              >
-                                <img
-                                  src={target.sampleImagePreview}
-                                  alt="示例图预览"
-                                  onClick={() => setPreviewImageUrl(target.sampleImagePreview)}
-                                  style={{ width: '100%', height: '100%', objectFit: 'contain', cursor: 'zoom-in' }}
-                                />
-                                {hoveredSampleIndex === index && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setFormData({
-                                        ...formData,
-                                        followTargets: formData.followTargets.map((item, itemIndex) => {
-                                          if (itemIndex !== index) return item;
-                                          if (item.sampleImagePreview) URL.revokeObjectURL(item.sampleImagePreview);
-                                          return { ...item, sampleImage: null, sampleImagePreview: '' };
-                                        }),
-                                      })
-                                    }
-                                    style={{
-                                      position: 'absolute',
-                                      top: 5,
-                                      right: 5,
-                                      width: 22,
-                                      height: 22,
-                                      borderRadius: 999,
-                                      border: 'none',
-                                      background: 'rgba(220,38,38,0.92)',
-                                      color: '#fff',
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      cursor: 'pointer',
-                                      padding: 0,
-                                      lineHeight: 1,
-                                    }}
-                                    aria-label="删除示例图"
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              <label
-                                htmlFor={`follow-sample-image-${index}`}
-                                style={{
-                                  width: 70,
-                                  height: 70,
-                                  border: '1px dashed #cbd5e1',
-                                  borderRadius: 4,
-                                  background: '#fff',
-                                  display: 'inline-flex',
-                                  flexDirection: 'column',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: 8,
-                                  color: '#4b5565',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                <Plus size={24} color="#8b95a7" />
-                                <span style={{ fontSize: 12, fontWeight: 600 }}>上传图片</span>
-                              </label>
-                            )}
                           </div>
                         </div>
                       ))}
