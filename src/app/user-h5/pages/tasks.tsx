@@ -10,7 +10,6 @@ import {
   Globe,
   Grid2x2,
   Hash,
-  History,
   Image as ImageIcon,
   Link2,
   MessageCircle,
@@ -231,16 +230,6 @@ export function TaskListPage() {
         </div>
       </div>
 
-      <div style={taskListFloatingDockStyle}>
-        <div style={taskListFloatingDockInnerStyle}>
-          <button onClick={() => navigate("/submissions")} style={taskListFloatingButtonStyle}>
-            <span style={taskListFloatingIconWrapStyle}>
-              <History size={18} />
-            </span>
-            <span style={taskListFloatingTextStyle}>我的任务</span>
-          </button>
-        </div>
-      </div>
     </Container>
   );
 }
@@ -859,7 +848,7 @@ function SceneTaskDetail({
               <span style={floatingIconWrapStyle}>
                 <History size={14} />
               </span>
-              <span style={floatingTextStyle}>我的任务</span>
+              <span style={floatingTextStyle}>提交记录</span>
             </button>
           </div>
         </div>
