@@ -1254,25 +1254,9 @@ export function TaskCreate() {
             <Panel title="奖励配置">
               <SceneFields>
                 {scene === 'follow' && (
-                  <Field label="奖励模式">
-                    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                      {[
-                        { value: 'all_accounts' as const, label: '关注所有账号发奖' },
-                        { value: 'per_account' as const, label: '每关注1个账号发奖' },
-                      ].map((option) => {
-                        const checked = formData.followRewardMode === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, followRewardMode: option.value })}
-                            style={radioLikeButtonStyle(checked)}
-                          >
-                            <span style={radioCircleStyle(checked)} />
-                            {option.label}
-                          </button>
-                        );
-                      })}
+                  <Field label="奖励说明">
+                    <div style={{ fontSize: 12, color: '#4b5565', lineHeight: 1.7 }}>
+                      每关注 1 个账号发放 1 次奖励。
                     </div>
                   </Field>
                 )}
