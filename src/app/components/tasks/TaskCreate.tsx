@@ -164,6 +164,8 @@ export function TaskCreate() {
       { id: 'fa_2', platform: '抖音', accountName: '品牌官方抖音号', profileImage: null as File | null, profileImagePreview: '' },
     ] as Array<{ id: string; platform: string; accountName: string; profileImage: File | null; profileImagePreview: string }>,
     followRuleDescription: '',
+    followPlaybookDescription: '',
+    followPlaybookEnabled: true,
     engagementPlatform: '小红书',
     contentUrl: '',
     engagementSampleImages: [] as File[],
@@ -537,6 +539,42 @@ export function TaskCreate() {
             <Panel title={`${sceneMeta.label}玩法`}>
               {scene === 'follow' && (
                 <SceneFields>
+                  <Field label="场景功能">
+                    <div style={{ display: 'grid', gap: 10, width: 'min(720px, 100%)' }}>
+                      <div style={{ position: 'relative', width: '100%' }}>
+                        <textarea
+                          value={formData.followPlaybookDescription}
+                          onChange={(event) => setFormData({ ...formData, followPlaybookDescription: event.target.value })}
+                          placeholder="说明这个账号加粉玩法是做什么的、用户该怎么参与（例如：关注指定账号并上传截图，审核通过后发放奖励）。"
+                          maxLength={200}
+                          style={{ ...textareaStyle(false), paddingBottom: 22, width: '100%' }}
+                        />
+                        <span style={{ position: 'absolute', right: 10, bottom: 6, fontSize: 11, color: '#9aa4b2', pointerEvents: 'none' }}>
+                          {formData.followPlaybookDescription.length}/200
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 12, color: '#475569', minWidth: 84 }}>开启该玩法</span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={formData.followPlaybookEnabled}
+                          onClick={() =>
+                            setFormData({
+                              ...formData,
+                              followPlaybookEnabled: !formData.followPlaybookEnabled,
+                            })
+                          }
+                          style={switchStyle(formData.followPlaybookEnabled)}
+                        >
+                          <span style={switchThumbStyle(formData.followPlaybookEnabled)} />
+                        </button>
+                        <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
+                          关闭后，前台不展示该账号加粉玩法入口。
+                        </span>
+                      </div>
+                    </div>
+                  </Field>
                   <Field
                     label="关注账号列表"
                     required
