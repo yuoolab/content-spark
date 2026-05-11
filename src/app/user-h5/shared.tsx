@@ -142,9 +142,11 @@ export function NavShell() {
       : pathname === "/account/verify" || pathname.startsWith("/account/verify/")
           ? (accountVerifyPlatform ? `${accountVerifyPlatform}账号认证` : "账号认证")
         : pathname === "/submissions"
-          ? "我的任务"
+          ? "提交记录"
         : pathname.startsWith("/submissions/")
           ? "提交详情"
+        : pathname === "/rewards"
+          ? "我的奖品"
         : pathname === "/submit" || pathname.startsWith("/submit?")
           ? "提交内容"
         : pathname.startsWith("/tasks/")
@@ -163,6 +165,8 @@ export function NavShell() {
   const showSubmitStateSwitcher = pathname.startsWith("/tasks/") && activeTask?.scene === "engagement";
   const showActivityStatusSwitcher =
     pathname.startsWith("/tasks/") && (activeTask?.scene === "engagement" || activeTask?.scene === "follow");
+  const showEngagementContentSwitcher = pathname.startsWith("/tasks/") && activeTask?.scene === "engagement";
+  const isFollowTaskDetail = pathname.startsWith("/tasks/") && activeTask?.scene === "follow";
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -417,6 +421,7 @@ export function NavShell() {
             { id: "points", label: "积分" },
             { id: "gift", label: "赠品" },
             { id: "cash", label: "红包" },
+            { id: "lottery", label: "抽奖" },
           ].map((reward) => {
             const active = new URLSearchParams(location.search).get("reward") === reward.id;
             return (
@@ -454,7 +459,7 @@ export function NavShell() {
           style={{
             position: "fixed",
             left: "calc(50% + (var(--h5-frame-width) / 2) + 12px)",
-            top: "calc(50% - 194px)",
+            top: "calc(50% - 330px)",
             transform: "translateY(-50%)",
             zIndex: 22,
             display: "flex",
@@ -462,12 +467,21 @@ export function NavShell() {
             gap: 8,
           }}
         >
-          {[
-            { id: "upcoming", label: "未开始" },
-            { id: "ongoing", label: "进行中" },
-            { id: "finished", label: "已结束" },
-          ].map((item) => {
-            const active = new URLSearchParams(location.search).get("activityStatus") === item.id;
+          {(isFollowTaskDetail
+            ? [
+                { id: "ongoing", label: "进行中" },
+                { id: "finished", label: "已关闭" },
+              ]
+            : [
+                { id: "upcoming", label: "未开始" },
+                { id: "ongoing", label: "进行中" },
+                { id: "finished", label: "已结束" },
+              ]
+          ).map((item) => {
+            const activityStatus = new URLSearchParams(location.search).get("activityStatus");
+            const effectiveActivityStatus =
+              isFollowTaskDetail && activityStatus === "upcoming" ? "ongoing" : activityStatus;
+            const active = effectiveActivityStatus ? effectiveActivityStatus === item.id : item.id === "ongoing";
             return (
               <button
                 key={item.id}
@@ -480,6 +494,54 @@ export function NavShell() {
                 style={{
                   height: 30,
                   minWidth: 64,
+                  padding: "0 10px",
+                  borderRadius: 999,
+                  border: active ? "1px solid rgba(36,116,255,0.34)" : "1px solid rgba(203,213,225,0.92)",
+                  background: active ? "rgba(36,116,255,0.10)" : "rgba(255,255,255,0.95)",
+                  color: active ? "#2474ff" : "#475569",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 8px 18px rgba(15,23,42,0.08)",
+                }}
+              >
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {showEngagementContentSwitcher && (
+        <div
+          style={{
+            position: "fixed",
+            left: "calc(50% + (var(--h5-frame-width) / 2) + 12px)",
+            top: "calc(50% - 194px)",
+            transform: "translateY(-50%)",
+            zIndex: 22,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {[
+            { id: "link", label: "内容链接" },
+            { id: "share_image", label: "分享图" },
+          ].map((item) => {
+            const active = new URLSearchParams(location.search).get("contentView") === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  const next = new URLSearchParams(location.search);
+                  next.set("contentView", item.id);
+                  navigate(`${pathname}?${next.toString()}`, { replace: true });
+                }}
+                style={{
+                  height: 30,
+                  minWidth: 72,
                   padding: "0 10px",
                   borderRadius: 999,
                   border: active ? "1px solid rgba(36,116,255,0.34)" : "1px solid rgba(203,213,225,0.92)",

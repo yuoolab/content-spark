@@ -1,4 +1,4 @@
-import { BadgeCheck, CircleCheckBig, Clock3, Copy, Gift, ShieldCheck } from "lucide-react";
+import { BadgeCheck, ChevronRight, Clock3, Copy, Gift, ShieldCheck } from "lucide-react";
 import { useNavigate, useParams } from "react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -360,37 +360,105 @@ export function SubmissionDetailPage() {
 }
 
 export function RewardsPage() {
-  const { rewards, settleReward } = useUserH5();
-  const totalArrived = rewards.filter((item) => item.status === "已到账").reduce((sum, item) => sum + item.amount, 0);
-  const totalPending = rewards.filter((item) => item.status === "待到账").reduce((sum, item) => sum + item.amount, 0);
+  const { rewards } = useUserH5();
+  const [activeTab, setActiveTab] = useState<"全部" | "星币" | "赠品" | "红包" | "优惠券">("全部");
+
+  const tabs: Array<"全部" | "星币" | "赠品" | "红包" | "优惠券"> = ["全部", "星币", "赠品", "红包", "优惠券"];
+
+  const resolvePrizeType = (item: typeof rewards[number]): "星币" | "赠品" | "红包" | "优惠券" => {
+    const text = `${item.taskName} ${item.note}`.toLowerCase();
+    if (text.includes("红包")) return "红包";
+    if (text.includes("赠品")) return "赠品";
+    if (text.includes("优惠券")) return "优惠券";
+    return "星币";
+  };
+
+  const filtered = rewards.filter((item) => activeTab === "全部" || resolvePrizeType(item) === activeTab);
+  const prizeCover = (type: "星币" | "赠品" | "红包" | "优惠券") =>
+    type === "星币"
+      ? "https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&w=180&q=80"
+      : type === "赠品"
+      ? "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=180&q=80"
+      : type === "红包"
+      ? "https://images.unsplash.com/photo-1633158829585-23ba8f7c8caf?auto=format&fit=crop&w=180&q=80"
+      : "https://images.unsplash.com/photo-1556745757-8d76bdb6984b?auto=format&fit=crop&w=180&q=80";
+  const prizeTitle = (item: typeof rewards[number], type: "星币" | "赠品" | "红包" | "优惠券") =>
+    type === "星币" ? `${item.amount}积分` : item.taskName;
+  const prizeStatus = (item: typeof rewards[number]) => (item.status === "已到账" ? "已领取" : item.status === "待到账" ? "待发放" : "已失效");
 
   return (
     <Container>
-      <div style={{ display: "grid", gap: 12 }}>
-        <Card style={{ padding: 16, background: "linear-gradient(135deg, rgba(36,116,255,0.95), rgba(15,23,42,0.95))", color: "#fff" }}>
-          <SectionTitle title="我的奖励" extra={<Pill tone="gray">积分</Pill>} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
-            <MiniStat title="已到账" value={totalArrived} />
-            <MiniStat title="待到账" value={totalPending} />
-          </div>
-        </Card>
+      <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "2px 0 6px" }}>
+          {tabs.map((tab) => {
+            const active = tab === activeTab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  height: 32,
+                  minWidth: 64,
+                  padding: "0 12px",
+                  border: "none",
+                  background: "transparent",
+                  borderBottom: active ? "3px solid #ff4d00" : "3px solid transparent",
+                  color: active ? "#ff4d00" : "#8b919b",
+                  fontSize: 16,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
 
         <div style={{ display: "grid", gap: 10 }}>
-          {rewards.map((item) => (
-            <Card key={item.id} style={{ padding: 14 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                    <Pill tone={item.status === "已到账" ? "green" : item.status === "待到账" ? "orange" : "gray"}>{item.status}</Pill>
-                    <Pill tone="blue">{item.amount} 积分</Pill>
+          {filtered.map((item) => {
+            const type = resolvePrizeType(item);
+            return (
+              <Card key={item.id} style={{ padding: 14, borderRadius: 16, background: "#fff", border: "1px solid rgba(226,232,240,0.85)", boxShadow: "none" }}>
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <img src={prizeCover(type)} alt={type} style={{ width: 74, height: 74, borderRadius: 8, objectFit: "cover", border: "1px solid #e5e7eb", flexShrink: 0 }} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 20, lineHeight: 1.3, color: "#0f172a", fontWeight: 700, wordBreak: "break-word" }}>
+                        {prizeTitle(item, type)}
+                      </div>
+                      <span
+                        style={{
+                          marginTop: 8,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          height: 28,
+                          padding: "0 10px",
+                          borderRadius: 6,
+                          border: "1px solid #22c55e",
+                          color: "#22c55e",
+                          fontSize: 16,
+                          fontWeight: 700,
+                        }}
+                      >
+                        {prizeStatus(item)}
+                      </span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a" }}>{item.taskName}</div>
-                  <div style={{ marginTop: 6, fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>{item.note}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                    <div style={{ fontSize: 14, color: "#9aa0a6", fontWeight: 600 }}>
+                      中奖时间：{item.arrivedAt || item.createdAt}
+                    </div>
+                    <button type="button" style={{ border: "none", background: "transparent", color: "#8b919b", fontSize: 20, fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 2, cursor: "pointer" }}>
+                      查看 <ChevronRight size={18} />
+                    </button>
+                  </div>
                 </div>
-                {item.status === "待到账" ? <button onClick={() => settleReward(item.id)} style={iconButtonStyle("#16a34a")}> <CircleCheckBig size={18} /> </button> : <div style={iconDisabledStyle}><CircleCheckBig size={18} /></div>}
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       </div>
     </Container>
@@ -453,17 +521,6 @@ export function NotFoundPage() {
   );
 }
 
-function MiniStat({ title, value }: { title: string; value: number }) {
-  return (
-    <div style={{ padding: 14, borderRadius: 18, background: "rgba(255,255,255,0.12)" }}>
-      <div style={{ fontSize: 12, opacity: 0.8 }}>{title}</div>
-      <div style={{ marginTop: 6, fontSize: 24, fontWeight: 900 }}>{value}</div>
-    </div>
-  );
-}
-
-const iconButtonStyle = (color: string): React.CSSProperties => ({ alignSelf: "center", width: 42, height: 42, borderRadius: 16, border: "none", background: `${color}1f`, color, cursor: "pointer" });
-const iconDisabledStyle: React.CSSProperties = { alignSelf: "center", width: 42, height: 42, borderRadius: 16, background: "rgba(241,245,249,0.9)", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b" };
 const errorBoxStyle: React.CSSProperties = { marginTop: 10, padding: 12, borderRadius: 18, background: "rgba(255,77,79,0.10)", color: "#ef4444", fontSize: 13, lineHeight: 1.6 };
 const linkButtonStyle: React.CSSProperties = { border: "none", background: "transparent", color: "#2474ff", fontSize: 12, fontWeight: 400, cursor: "pointer" };
 const primaryButtonStyle: React.CSSProperties = { marginTop: 16, height: 42, padding: "0 18px", border: "none", borderRadius: 16, background: "#2474ff", color: "#fff", fontWeight: 800, cursor: "pointer" };

@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 type Annotation = {
   id: string;
   title: string;
-  match: (pathname: string) => boolean;
+  match: (pathname: string, search: string) => boolean;
   interactions: string[];
   logic: string[];
 };
@@ -16,33 +16,26 @@ const annotations: Annotation[] = [
     title: "H5 任务中心",
     match: (pathname) => pathname === "/tasks",
     interactions: [
-      "点击状态筛选，切换全部、进行中、未开始、已结束任务。",
-      "点击任务卡片，进入对应任务详情页面。",
-      "点击我的任务悬浮按钮，查看历史提交记录。",
-      "点击底部我的，进入三方账号认证中心。",
+      "任务列表不用做，仅做为入口进入任务详情页查看注释。",
+      "演示 demo 只看「官方加粉任务」和「重点内容互动助推」。",
     ],
-    logic: [
-      "仅展示后台开启前台展示的任务。",
-      "展示排序数值越大，列表位置越靠前。",
-      "任务状态由开始时间和结束时间共同决定。",
-      "卡片统计展示参与人数和提交量。",
-    ],
+    logic: []
   },
   {
     id: "h5-task-detail",
-    title: "H5 任务详情",
+    title: "H5 加粉任务任务详情",
     match: (pathname) => /^\/tasks\/[^/]+$/.test(pathname),
     interactions: [
-      "点击任务说明，自动定位到参与步骤区域。",
-      "进行中任务底部显示去提交内容按钮。",
-      "未开始任务底部只显示订阅开始提醒。",
-      "已结束任务底部显示查看名次并打开排行榜弹窗。",
+      "点击任务说明，页面定位到任务规则与操作区。",
+      "若后台关闭加粉任务，则显示已结束状态，并隐藏提交入口。",
+      "进行中状态展示上传截图或提交入口。",
+      "抽奖机会奖励场景中，按钮文案显示去抽奖。",
     ],
     logic: [
-      "平台要求只展示当前任务配置的单个平台。",
-      "参与规则使用后台任务配置自动生成。",
-      "奖励说明按后台奖励规格展示星云币、红包和赠品。",
-      "任务结束后不允许继续提交内容。",
+      "奖励说明随奖品类型动态变化，支持星云币、红包、赠品与抽奖机会。",
+      "加粉任务显示奖励进度与已发奖状态文案。",
+      "已关闭状态不再允许继续提交。",
+      "页面内容由后台任务配置实时驱动。",
     ],
   },
   {
@@ -67,16 +60,16 @@ const annotations: Annotation[] = [
     title: "H5 我的任务",
     match: (pathname) => pathname === "/submissions",
     interactions: [
-      "点击顶部状态筛选，查看不同审核状态记录。",
-      "点击提交卡片，跳转到关联任务详情。",
-      "点击复制图标，复制用户提交的内容链接。",
-      "点击拒绝原因，弹窗查看审核拒绝说明。",
+      "点击顶部状态切换，按审核进度筛选记录。",
+      "点击提交记录可进入详情页。",
+      "点击复制图标可复制提交链接。",
+      "拒绝记录支持查看驳回原因。",
     ],
     logic: [
-      "前台不展示已删除状态。",
-      "只有已通过记录展示奖励信息。",
-      "星云币和抽奖机会不会同时展示。",
-      "已拒绝记录在提交时间行展示拒绝原因入口。",
+      "仅展示前台可见状态数据。",
+      "奖励信息按审核结果和发奖结果展示。",
+      "抽奖机会类型显示次数口径。",
+      "同一提交记录保持任务来源关联。",
     ],
   },
   {
@@ -84,16 +77,16 @@ const annotations: Annotation[] = [
     title: "H5 提交详情",
     match: (pathname) => /^\/submissions\/[^/]+$/.test(pathname),
     interactions: [
-      "点击顶部任务卡片，进入对应任务详情。",
-      "点击复制图标，复制提交内容链接。",
-      "奖励信息中的查看按钮仅作为展示入口。",
-      "返回按钮回到上一访问页面。",
+      "可从详情页回跳至关联任务。",
+      "支持复制提交链接。",
+      "根据状态展示奖励结果与说明。",
+      "返回保持原访问路径。",
     ],
     logic: [
-      "提交详情通过提交记录 id 查询。",
-      "内容摘要展示发布时间、摘要和链接。",
-      "已到账状态才展示赠品等奖励信息。",
-      "页面不再展示平台标签和状态冗余信息。",
+      "通过提交 id 拉取详情数据。",
+      "详情字段包含时间、链接与审核结果。",
+      "已发奖时展示实际奖品信息。",
+      "前台展示保持简化，避免重复字段。",
     ],
   },
   {
@@ -132,19 +125,19 @@ const annotations: Annotation[] = [
   },
   {
     id: "h5-rewards",
-    title: "H5 我的奖励",
+    title: "H5 我的奖品",
     match: (pathname) => pathname === "/rewards",
     interactions: [
-      "查看星云币、待到账和已到账奖励汇总。",
-      "点击奖励记录，查看来源任务和到账说明。",
-      "切换状态，筛选不同到账状态奖励。",
-      "返回按钮回到上一页面。",
+      "顶部按全部、星币、赠品、红包、优惠券筛选。",
+      "列表卡片展示奖品图、状态与中奖时间。",
+      "点击查看进入奖品详情或后续动作。",
+      "页面名称统一为我的奖品。",
     ],
     logic: [
-      "奖励通过提交记录关联来源任务。",
-      "状态包含待到账、已到账和已失效。",
-      "星云币替代原积分口径展示。",
-      "到账时间由审核通过和发放规则决定。",
+      "奖品记录与任务发奖记录关联。",
+      "状态口径为待发放、已领取、已失效。",
+      "不同奖品类型复用同一列表结构展示。",
+      "时间字段统一展示为中奖时间。",
     ],
   },
   {
@@ -186,16 +179,16 @@ const annotations: Annotation[] = [
     title: "后台 数据看板",
     match: (pathname) => pathname === "/backend/dashboard",
     interactions: [
-      "点击日期筛选，切换看板统计范围。",
-      "点击顶部任务管理，进入任务列表。",
-      "点击顶部内容审核，进入审核列表。",
-      "点击预览小程序，进入 H5 任务中心。",
+      "旧数据看板入口已下线并重定向到任务管理。",
+      "进入内容激励计划后默认打开任务管理。",
+      "顶部可切换到内容审核。",
+      "左下角预览按钮进入 H5 端页面。",
     ],
     logic: [
-      "看板聚合参与人数、提交量和平台分布。",
-      "数据看板路径只高亮数据看板 Tab。",
-      "会员管理菜单默认展开。",
-      "后台和 H5 入口保持互相可达。",
+      "dashboard 路径统一重定向至 /backend/tasks。",
+      "任务管理作为后台主工作台。",
+      "Tab 高亮与当前业务路由保持一致。",
+      "后台与 H5 支持双向跳转。",
     ],
   },
   {
@@ -216,20 +209,44 @@ const annotations: Annotation[] = [
     ],
   },
   {
-    id: "backend-task-create",
-    title: "后台 创建任务",
-    match: (pathname) => pathname === "/backend/tasks/create",
+    id: "backend-task-create-config",
+    title: "后台 创建任务（任务配置）",
+    match: (pathname, search) => {
+      if (pathname !== "/backend/tasks/create") return false;
+      const tab = new URLSearchParams(search).get("tab");
+      return tab !== "account";
+    },
     interactions: [
-      "填写基础信息，配置任务名称、时间和平台。",
-      "配置奖励规格，添加投稿奖励和达标奖励。",
-      "设置展示状态和排序，控制前台展示效果。",
-      "点击保存，返回任务管理列表。",
+      "账号加粉页顶部可在任务配置与账号管理之间切换。",
+      "任务配置中可开启或关闭账号加粉玩法，关闭后下方配置置灰。",
+      "关注账号列表支持新增、删除与选择已维护账号。",
+      "内容互动支持两种内容方式：输入内容链接或上传分享图。",
     ],
     logic: [
-      "平台要求最终在 H5 中只展示一个平台。",
-      "奖励规格支持星云币、红包、赠品和抽奖机会。",
-      "提交上限用于生成前台参与规则。",
-      "保存后的配置驱动 H5 任务详情展示。",
+      "关闭账号加粉玩法后，规则校验放宽，保存按钮可正常提交。",
+      "账号管理中已被关注账号列表引用的账号不可删除，会给出提示。",
+      "奖品类型支持积分、赠品、微信红包与抽奖机会；抽奖机会通过弹窗选择活动。",
+      "任务配置保存后会直接影响 H5 任务详情中的文案与展示样式。",
+    ],
+  },
+  {
+    id: "backend-task-create-account",
+    title: "后台 创建任务（账号管理）",
+    match: (pathname, search) => {
+      if (pathname !== "/backend/tasks/create") return false;
+      return new URLSearchParams(search).get("tab") === "account";
+    },
+    interactions: [
+      "可新增平台账号并维护平台、账号名与主页截图。",
+      "每个账号展示累计关注人数的统计信息。",
+      "删除账号前会先判断是否被任务配置引用。",
+      "返回任务配置页后可继续配置关注账号列表。",
+    ],
+    logic: [
+      "账号上限最多 20 个，达到上限后新增按钮禁用。",
+      "已被任务关联的账号不可删除，并给出阻断提示。",
+      "账号资料更新会同步到任务配置中的账号下拉选项。",
+      "账号管理仅维护账号库，不直接触发任务发布。",
     ],
   },
   {
@@ -277,10 +294,10 @@ const annotations: Annotation[] = [
       "点击拒绝，填写拒绝原因并同步前台。",
     ],
     logic: [
-      "已删除状态不再作为审核筛选项。",
-      "筛选项标题保留在输入框内部。",
-      "拒绝原因会在 H5 我的任务中弹窗展示。",
-      "审核状态驱动奖励是否展示。",
+      "审核列表已移除内容标题列，字段更聚焦。",
+      "操作按钮单行展示并保留文字左右留白。",
+      "拒绝原因会在 H5 我的任务中可查看。",
+      "审核状态驱动奖励发放与展示。",
     ],
   },
   {
@@ -390,22 +407,22 @@ const annotations: Annotation[] = [
     title: "后台 互动营销入口",
     match: (pathname) => pathname === "/backend/interactive-marketing",
     interactions: [
-      "点击内容激励入口，进入数据看板或任务管理。",
+      "点击内容激励入口，直接进入任务管理。",
       "点击活动中心，查看营销活动承接入口。",
       "点击微社区，进入社区运营场景。",
       "点击导购商城，进入商城承接页面。",
     ],
     logic: [
       "经营工具承接内容激励之外的运营场景。",
-      "活动中心可作为后续任务投放入口。",
+      "内容激励入口已统一落到任务管理工作台。",
       "微社区用于沉淀审核通过内容。",
       "导购商城与会员奖励发放关联。",
     ],
   },
 ];
 
-function findAnnotation(pathname: string) {
-  return annotations.find((item) => item.match(pathname));
+function findAnnotation(pathname: string, search: string) {
+  return annotations.find((item) => item.match(pathname, search));
 }
 
 function getInitialPosition(scope: "h5" | "backend" | "default") {
@@ -416,14 +433,11 @@ function getInitialPosition(scope: "h5" | "backend" | "default") {
     const phoneWidth = 520;
     const gap = 18;
     const phoneLeft = Math.max(0, (window.innerWidth - phoneWidth) / 2);
-    const phoneRight = phoneLeft + phoneWidth;
-    const rightSpace = window.innerWidth - phoneRight - gap;
     const leftSpace = phoneLeft - gap;
 
-    if (rightSpace >= panelWidth) return { x: phoneRight + gap, y: 92 };
     if (leftSpace >= panelWidth) return { x: phoneLeft - panelWidth - gap, y: 92 };
 
-    return { x: Math.max(12, window.innerWidth - panelWidth - 12), y: 92 };
+    return { x: 12, y: 92 };
   }
 
   return { x: Math.max(12, window.innerWidth - 338), y: 76 };
@@ -460,14 +474,14 @@ const highlightStyle: CSSProperties = {
 
 export function PageAnnotations({ scope = "default" }: { scope?: "h5" | "backend" | "default" }) {
   const location = useLocation();
-  const annotation = useMemo(() => findAnnotation(location.pathname), [location.pathname]);
+  const annotation = useMemo(() => findAnnotation(location.pathname, location.search), [location.pathname, location.search]);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const [closed, setClosed] = useState(true);
+  const [closed, setClosed] = useState(scope !== "h5");
   const [minimized, setMinimized] = useState(false);
   const [position, setPosition] = useState(() => ({ x: 24, y: 96 }));
 
   useEffect(() => {
-    setClosed(true);
+    setClosed(scope !== "h5");
     setMinimized(false);
     setPosition(getInitialPosition(scope));
   }, [annotation?.id, scope]);
@@ -651,13 +665,22 @@ function AnnotationSection({ title, items, logic = false }: { title: string; ite
       >
         {title}
       </h4>
-      <ul style={{ margin: 0, paddingLeft: 17, display: "grid", gap: 7 }}>
+      <ol
+        style={{
+          margin: 0,
+          paddingLeft: 20,
+          display: "grid",
+          gap: 7,
+          listStyleType: "decimal",
+          listStylePosition: "outside",
+        }}
+      >
         {items.map((item) => (
-          <li key={item} style={{ color: "#334155", fontSize: 12, lineHeight: 1.62 }}>
+          <li key={item} style={{ color: "#334155", fontSize: 12, lineHeight: 1.62, listStyleType: "decimal" }}>
             <HighlightedText text={item} />
           </li>
         ))}
-      </ul>
+      </ol>
     </section>
   );
 }

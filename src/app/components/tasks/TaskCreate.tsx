@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import type { CSSProperties, ElementType, FormEvent, ReactNode } from 'react';
 import {
   ArrowLeft,
   BarChart3,
+  Flame,
   Heart,
   Plus,
   Save,
@@ -19,6 +20,7 @@ type RewardType = 'points' | 'cash' | 'gift';
 type FollowRewardMode = 'all_accounts' | 'per_account';
 type PrizeType = 'points' | 'gift' | 'wechat_redpacket' | 'lottery_chance';
 type RedpacketType = 'lucky' | 'fixed';
+type EngagementContentMode = 'link' | 'share_image';
 
 type PrizeConfig = {
   prizeType: PrizeType;
@@ -95,6 +97,11 @@ const rewardOptions: Array<{ value: RewardType; label: string }> = [
   { value: 'cash', label: '现金红包' },
   { value: 'gift', label: '赠品' },
 ];
+const lotteryActivityOptions = [
+  { id: 'lottery-new-user', name: '新客抽奖转盘' },
+  { id: 'lottery-seeding-booster', name: '种草助推转盘' },
+  { id: 'lottery-festival', name: '节日福利转盘' },
+];
 
 function getRewardOptionsByScene(scene: SceneKey) {
   if (scene === 'follow' || scene === 'engagement' || scene === 'engagement_reward') {
@@ -120,12 +127,14 @@ const baseInputStyle: CSSProperties = {
 export function TaskCreate() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const scene = getSceneKey(searchParams.get('scene'));
+  const followTabParam = searchParams.get('tab');
   const [showValidation, setShowValidation] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState('');
   const [showPrizeModal, setShowPrizeModal] = useState(false);
-  const [followTab, setFollowTab] = useState<'task' | 'account'>('task');
+  const [showLotteryActivityModal, setShowLotteryActivityModal] = useState(false);
+  const [followTab, setFollowTab] = useState<'task' | 'account'>(followTabParam === 'account' ? 'account' : 'task');
   const [draggingFollowIndex, setDraggingFollowIndex] = useState<number | null>(null);
   const [prizeError, setPrizeError] = useState('');
   const [selectedPrize, setSelectedPrize] = useState<PrizeConfig | null>(null);
@@ -160,14 +169,17 @@ export function TaskCreate() {
     maxPerUser: 1,
     followTargets: [{ platform: '小红书', account: '', sampleImage: null as File | null, sampleImagePreview: '', guideText: '' }],
     followManagedAccounts: [
-      { id: 'fa_1', platform: '小红书', accountName: '品牌官方小红书', profileImage: null as File | null, profileImagePreview: '' },
-      { id: 'fa_2', platform: '抖音', accountName: '品牌官方抖音号', profileImage: null as File | null, profileImagePreview: '' },
-    ] as Array<{ id: string; platform: string; accountName: string; profileImage: File | null; profileImagePreview: string }>,
+      { id: 'fa_1', platform: '小红书', accountName: '品牌官方小红书', profileImage: null as File | null, profileImagePreview: '', totalFollowers: 1280 },
+      { id: 'fa_2', platform: '抖音', accountName: '品牌官方抖音号', profileImage: null as File | null, profileImagePreview: '', totalFollowers: 960 },
+    ] as Array<{ id: string; platform: string; accountName: string; profileImage: File | null; profileImagePreview: string; totalFollowers: number }>,
     followRuleDescription: '',
     followPlaybookDescription: '',
     followPlaybookEnabled: true,
     engagementPlatform: '小红书',
+    engagementContentMode: 'link' as EngagementContentMode,
     contentUrl: '',
+    engagementShareImage: null as File | null,
+    engagementShareImagePreview: '',
     engagementSampleImages: [] as File[],
     engagementSampleImagePreviews: [] as string[],
     engagementProofDescription: '',
@@ -207,6 +219,8 @@ export function TaskCreate() {
   const requiredMissing = scene === 'follow'
     ? !isSceneValid(scene, formData)
     : !formData.name.trim() || !formData.startDate || !formData.endDate || !isSceneValid(scene, formData);
+  const isManagedAccountLinked = (accountName: string) =>
+    formData.followTargets.some((target) => target.account.trim() && target.account === accountName);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -246,7 +260,21 @@ export function TaskCreate() {
       lotteryChanceCount: 1,
     });
     setShowPrizeModal(true);
+    setShowLotteryActivityModal(false);
   };
+
+  const switchFollowTab = (tab: 'task' | 'account') => {
+    setFollowTab(tab);
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', tab);
+    setSearchParams(next, { replace: true });
+  };
+
+  useEffect(() => {
+    if (scene !== 'follow') return;
+    const tabFromQuery = searchParams.get('tab') === 'account' ? 'account' : 'task';
+    if (tabFromQuery !== followTab) setFollowTab(tabFromQuery);
+  }, [scene, searchParams, followTab]);
 
   const confirmPrize = () => {
     if (!prizeForm.prizeName.trim()) {
@@ -297,8 +325,8 @@ export function TaskCreate() {
 
         {scene === 'follow' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 10, width: '100%' }}>
-            <button type="button" onClick={() => setFollowTab('task')} style={followTabButtonStyle(followTab === 'task')}>任务配置</button>
-            <button type="button" onClick={() => setFollowTab('account')} style={followTabButtonStyle(followTab === 'account')}>账号管理</button>
+            <button type="button" onClick={() => switchFollowTab('task')} style={followTabButtonStyle(followTab === 'task')}>任务配置</button>
+            <button type="button" onClick={() => switchFollowTab('account')} style={followTabButtonStyle(followTab === 'account')}>账号管理</button>
           </div>
         )}
         <form onSubmit={submit} noValidate style={contentGridStyle}>
@@ -324,6 +352,10 @@ export function TaskCreate() {
                       <button
                         type="button"
                         onClick={() => {
+                          if (isManagedAccountLinked(item.accountName)) {
+                            window.alert('该账号已被任务关联，暂不可删除。请先在关注账号列表中替换或移除后再删除。');
+                            return;
+                          }
                           if (formData.followManagedAccounts.length <= 1) return;
                           const next = formData.followManagedAccounts.filter((_, i) => i !== idx);
                           setFormData({ ...formData, followManagedAccounts: next });
@@ -350,7 +382,7 @@ export function TaskCreate() {
                       >
                         <Trash2 size={12} />
                       </button>
-                      <div style={{ display: 'grid', gridTemplateColumns: '120px 220px 90px', gap: 8, alignItems: 'center', paddingRight: 30 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '120px 220px 90px 190px', gap: 8, alignItems: 'center', paddingRight: 30 }}>
                       <select
                         value={item.platform}
                         onChange={(event) => {
@@ -409,6 +441,27 @@ export function TaskCreate() {
                       >
                         上传主页截图
                       </label>
+                      <div
+                        style={{
+                          height: 32,
+                          borderRadius: 8,
+                          border: '1px solid #fde68a',
+                          background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0 8px',
+                          color: '#92400e',
+                        }}
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+                          <Flame size={12} />
+                          任务引流关注
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: '#78350f' }}>
+                          {item.totalFollowers}
+                        </span>
+                      </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         {item.profileImagePreview ? (
@@ -474,7 +527,7 @@ export function TaskCreate() {
                         followManagedAccounts:
                             formData.followManagedAccounts.length >= 20
                               ? formData.followManagedAccounts
-                              : [...formData.followManagedAccounts, { id: `fa_${Date.now()}`, platform: '小红书', accountName: '', profileImage: null, profileImagePreview: '' }],
+                              : [...formData.followManagedAccounts, { id: `fa_${Date.now()}`, platform: '小红书', accountName: '', profileImage: null, profileImagePreview: '', totalFollowers: 0 }],
                       })
                     }
                     disabled={formData.followManagedAccounts.length >= 20}
@@ -557,10 +610,41 @@ export function TaskCreate() {
                           <div style={{ fontSize: 12, color: '#475569', lineHeight: 1.75 }}>
                             通过引导用户关注指定账号并提交关注凭证，完成审核后发放奖励，适用于拉新关注、账号矩阵导流等场景。
                           </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              minHeight: 32,
+                              padding: '6px 10px',
+                              borderRadius: 8,
+                              border: '1px solid #dbe4f2',
+                              background: 'rgba(255,255,255,0.85)',
+                            }}
+                          >
+                            <span style={{ fontSize: 12, color: '#475569', minWidth: 72 }}>开启该玩法</span>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={formData.followPlaybookEnabled}
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  followPlaybookEnabled: !formData.followPlaybookEnabled,
+                                })
+                              }
+                              style={switchStyle(formData.followPlaybookEnabled)}
+                            >
+                              <span style={switchThumbStyle(formData.followPlaybookEnabled)} />
+                            </button>
+                            <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
+                              关闭后，用户无法参与该玩法，待审核的奖励通过会正常发放。
+                            </span>
+                          </div>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
                             {[
                               { no: '01', text: '查看账号并完成关注' },
-                              { no: '02', text: '上传主页与关注截图' },
+                              { no: '02', text: '上传账号关注截图' },
                               { no: '03', text: '审核通过发放奖励' },
                             ].map((step) => (
                               <div
@@ -612,198 +696,198 @@ export function TaskCreate() {
                           @+
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <span style={{ fontSize: 12, color: '#475569', minWidth: 84 }}>开启该玩法</span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={formData.followPlaybookEnabled}
-                          onClick={() =>
-                            setFormData({
-                              ...formData,
-                              followPlaybookEnabled: !formData.followPlaybookEnabled,
-                            })
-                          }
-                          style={switchStyle(formData.followPlaybookEnabled)}
-                        >
-                          <span style={switchThumbStyle(formData.followPlaybookEnabled)} />
-                        </button>
-                        <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                          关闭后，前台不展示该账号加粉玩法入口。
-                        </span>
-                      </div>
                     </div>
                   </Field>
-                  <Field
-                    label="关注账号列表"
-                    required
-                    error={showValidation && hasFollowTargetError(formData.followTargets) ? '请完整填写目标账号和上传引导文案' : ''}
+                  <fieldset
+                      disabled={!formData.followPlaybookEnabled}
+                      style={{
+                        display: 'grid',
+                        gap: 16,
+                        margin: 0,
+                        padding: 0,
+                        border: 0,
+                        minWidth: 0,
+                        opacity: formData.followPlaybookEnabled ? 1 : 0.52,
+                        pointerEvents: formData.followPlaybookEnabled ? 'auto' : 'none',
+                      }}
                   >
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      {formData.followTargets.map((target, index) => (
-                        <div
-                          key={`${index}-${target.platform}`}
-                          draggable
-                          onDragStart={() => setDraggingFollowIndex(index)}
-                          onDragOver={(event) => event.preventDefault()}
-                          onDrop={() => {
-                            if (draggingFollowIndex === null) return;
-                            reorderFollowTargets(draggingFollowIndex, index);
-                            setDraggingFollowIndex(null);
-                          }}
-                          onDragEnd={() => setDraggingFollowIndex(null)}
-                          style={{
-                            display: 'grid',
-                            gap: 10,
-                            padding: 10,
-                            border: '1px solid #e1e7f0',
-                            borderRadius: 8,
-                            background: draggingFollowIndex === index ? '#f1f5f9' : '#fcfdff',
-                            width: 'fit-content',
-                            maxWidth: '100%',
-                            cursor: 'grab',
-                          }}
-                        >
-                          <div style={{ display: 'grid', gridTemplateColumns: '340px 350px 32px', gap: 8, alignItems: 'center' }}>
-                            <select
-                              value={target.account}
-                              onChange={(event) => {
-                                if (event.target.value === '__manage_accounts__') {
-                                  setFollowTab('account');
-                                  return;
-                                }
-                                setFormData({
-                                  ...formData,
-                                  followTargets: formData.followTargets.map((item, itemIndex) =>
-                                    itemIndex === index ? { ...item, account: event.target.value } : item
-                                  ),
-                                });
+                      <Field
+                        label="关注账号列表"
+                        required
+                        error={showValidation && hasFollowTargetError(formData.followTargets) ? '请完整填写目标账号和上传引导文案' : ''}
+                      >
+                        <div style={{ display: 'grid', gap: 8 }}>
+                          {formData.followTargets.map((target, index) => (
+                            <div
+                              key={`${index}-${target.platform}`}
+                              draggable={formData.followPlaybookEnabled}
+                              onDragStart={() => {
+                                if (!formData.followPlaybookEnabled) return;
+                                setDraggingFollowIndex(index);
                               }}
-                              style={{ ...inputStyle(showValidation && !target.account.trim()), width: '100%' }}
+                              onDragOver={(event) => {
+                                if (!formData.followPlaybookEnabled) return;
+                                event.preventDefault();
+                              }}
+                              onDrop={() => {
+                                if (!formData.followPlaybookEnabled || draggingFollowIndex === null) return;
+                                reorderFollowTargets(draggingFollowIndex, index);
+                                setDraggingFollowIndex(null);
+                              }}
+                              onDragEnd={() => setDraggingFollowIndex(null)}
+                              style={{
+                                display: 'grid',
+                                gap: 10,
+                                padding: 10,
+                                border: '1px solid #e1e7f0',
+                                borderRadius: 8,
+                                background: draggingFollowIndex === index ? '#f1f5f9' : '#fcfdff',
+                                width: 'fit-content',
+                                maxWidth: '100%',
+                                cursor: formData.followPlaybookEnabled ? 'grab' : 'not-allowed',
+                              }}
                             >
-                              <option value="">请选择账号</option>
-                              <option value="__manage_accounts__" style={{ color: '#1d4ed8', fontWeight: 700 }}>去管理账号</option>
-                              {formData.followManagedAccounts.map((item) => (
-                                  <option key={item.id} value={item.accountName}>
-                                    {item.platform} - {item.accountName}
-                                  </option>
-                              ))}
-                            </select>
-                            <input
-                              value={target.guideText}
-                              onChange={(event) =>
-                                setFormData({
-                                  ...formData,
-                                  followTargets: formData.followTargets.map((item, itemIndex) =>
-                                    itemIndex === index ? { ...item, guideText: event.target.value } : item
-                                  ),
-                                })
-                              }
-                              placeholder="关注引导文案（例如：请上传包含已关注状态的清晰截图）"
-                              maxLength={30}
-                              style={inputStyle(showValidation && !target.guideText.trim())}
-                            />
+                              <div style={{ display: 'grid', gridTemplateColumns: '340px 350px 32px', gap: 8, alignItems: 'center' }}>
+                                <select
+                                  value={target.account}
+                                  onChange={(event) => {
+                                    if (event.target.value === '__manage_accounts__') {
+                                      switchFollowTab('account');
+                                      return;
+                                    }
+                                    setFormData({
+                                      ...formData,
+                                      followTargets: formData.followTargets.map((item, itemIndex) =>
+                                        itemIndex === index ? { ...item, account: event.target.value } : item
+                                      ),
+                                    });
+                                  }}
+                                  style={{ ...inputStyle(showValidation && !target.account.trim()), width: '100%' }}
+                                >
+                                  <option value="">请选择账号</option>
+                                  <option value="__manage_accounts__" style={{ color: '#1d4ed8', fontWeight: 700 }}>去管理账号</option>
+                                  {formData.followManagedAccounts.map((item) => (
+                                      <option key={item.id} value={item.accountName}>
+                                        {item.platform} - {item.accountName}
+                                      </option>
+                                  ))}
+                                </select>
+                                <input
+                                  value={target.guideText}
+                                  onChange={(event) =>
+                                    setFormData({
+                                      ...formData,
+                                      followTargets: formData.followTargets.map((item, itemIndex) =>
+                                        itemIndex === index ? { ...item, guideText: event.target.value } : item
+                                      ),
+                                    })
+                                  }
+                                  placeholder="关注引导文案（例如：请上传包含已关注状态的清晰截图）"
+                                  maxLength={30}
+                                  style={inputStyle(showValidation && !target.guideText.trim())}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData({
+                                      ...formData,
+                                      followTargets:
+                                        formData.followTargets.length === 1
+                                          ? formData.followTargets
+                                          : formData.followTargets.filter((_, itemIndex) => itemIndex !== index),
+                                    })
+                                  }
+                                  disabled={formData.followTargets.length === 1}
+                                  style={{
+                                    width: 32,
+                                    height: 32,
+                                    border: '1px solid #d8dee8',
+                                    borderRadius: 6,
+                                    background: formData.followTargets.length === 1 ? '#f3f4f6' : '#fff',
+                                    color: formData.followTargets.length === 1 ? '#a1a8b3' : '#6b7280',
+                                    cursor: formData.followTargets.length === 1 ? 'not-allowed' : 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0,
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <button
                               type="button"
                               onClick={() =>
                                 setFormData({
                                   ...formData,
                                   followTargets:
-                                    formData.followTargets.length === 1
-                                      ? formData.followTargets
-                                      : formData.followTargets.filter((_, itemIndex) => itemIndex !== index),
+                                    [...formData.followTargets, { platform: '小红书', account: '', sampleImage: null, sampleImagePreview: '', guideText: '' }],
                                 })
                               }
-                              disabled={formData.followTargets.length === 1}
                               style={{
-                                width: 32,
                                 height: 32,
-                                border: '1px solid #d8dee8',
+                                padding: '0 10px',
                                 borderRadius: 6,
-                                background: formData.followTargets.length === 1 ? '#f3f4f6' : '#fff',
-                                color: formData.followTargets.length === 1 ? '#a1a8b3' : '#6b7280',
-                                cursor: formData.followTargets.length === 1 ? 'not-allowed' : 'pointer',
+                                border: '1px dashed #cbd5e1',
+                                background: '#fff',
+                                color: '#1d4ed8',
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                padding: 0,
-                                lineHeight: 1,
+                                gap: 6,
                               }}
                             >
-                              <Trash2 size={14} />
+                              <Plus size={13} />
+                              新增账号
                             </button>
+                            <span style={{ fontSize: 12, color: '#687386' }}></span>
                           </div>
                         </div>
-                      ))}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setFormData({
-                              ...formData,
-                              followTargets:
-                                [...formData.followTargets, { platform: '小红书', account: '', sampleImage: null, sampleImagePreview: '', guideText: '' }],
-                            })
-                          }
-                          style={{
-                            height: 32,
-                            padding: '0 10px',
-                            borderRadius: 6,
-                            border: '1px dashed #cbd5e1',
-                            background: '#fff',
-                            color: '#1d4ed8',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                          }}
-                        >
-                          <Plus size={13} />
-                          新增账号
-                        </button>
-                        <span style={{ fontSize: 12, color: '#687386' }}></span>
-                      </div>
-                    </div>
-                  </Field>
-                  <Field label="拒绝后再次提交">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={formData.followAllowResubmitAfterReject}
-                        onClick={() =>
-                          setFormData({
-                            ...formData,
-                            followAllowResubmitAfterReject: !formData.followAllowResubmitAfterReject,
-                          })
-                        }
-                        style={switchStyle(formData.followAllowResubmitAfterReject)}
+                      </Field>
+                      <Field label="拒绝后再次提交">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={formData.followAllowResubmitAfterReject}
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                followAllowResubmitAfterReject: !formData.followAllowResubmitAfterReject,
+                              })
+                            }
+                            style={switchStyle(formData.followAllowResubmitAfterReject)}
+                          >
+                            <span style={switchThumbStyle(formData.followAllowResubmitAfterReject)} />
+                          </button>
+                          <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
+                            默认开启：若审核拒绝，用户修改后可再次提交审核（可手动关闭）
+                          </span>
+                        </div>
+                      </Field>
+                      <Field
+                        label="规则说明"
+                        required
+                        error={showValidation && !formData.followRuleDescription.trim() ? '请输入规则说明' : ''}
                       >
-                        <span style={switchThumbStyle(formData.followAllowResubmitAfterReject)} />
-                      </button>
-                      <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        默认开启：若审核拒绝，用户修改后可再次提交审核（可手动关闭）
-                      </span>
-                    </div>
-                  </Field>
-                  <Field
-                    label="规则说明"
-                    required
-                    error={showValidation && !formData.followRuleDescription.trim() ? '请输入规则说明' : ''}
-                  >
-                    <div style={{ position: 'relative', width: 'min(540px, 100%)' }}>
-                      <textarea
-                        value={formData.followRuleDescription}
-                        onChange={(event) => setFormData({ ...formData, followRuleDescription: event.target.value })}
-                        placeholder="例如：每位用户需完成全部账号关注并上传清晰截图，截图需包含账号主页与已关注状态。"
-                        maxLength={200}
-                        style={{ ...textareaStyle(showValidation && !formData.followRuleDescription.trim()), paddingBottom: 22, width: '100%' }}
-                      />
-                      <span style={{ position: 'absolute', right: 10, bottom: 6, fontSize: 11, color: '#9aa4b2', pointerEvents: 'none' }}>{formData.followRuleDescription.length}/200</span>
-                    </div>
-                  </Field>
+                        <div style={{ position: 'relative', width: 'min(540px, 100%)' }}>
+                          <textarea
+                            value={formData.followRuleDescription}
+                            onChange={(event) => setFormData({ ...formData, followRuleDescription: event.target.value })}
+                            placeholder="例如：每位用户需完成全部账号关注并上传清晰截图，截图需包含账号主页与已关注状态。"
+                            maxLength={200}
+                            style={{ ...textareaStyle(showValidation && !formData.followRuleDescription.trim()), paddingBottom: 22, width: '100%' }}
+                          />
+                          <span style={{ position: 'absolute', right: 10, bottom: 6, fontSize: 11, color: '#9aa4b2', pointerEvents: 'none' }}>{formData.followRuleDescription.length}/200</span>
+                        </div>
+                      </Field>
+                  </fieldset>
                 </SceneFields>
               )}
 
@@ -812,7 +896,14 @@ export function TaskCreate() {
                   <Field label="互动平台">
                     <select
                       value={formData.engagementPlatform}
-                      onChange={(event) => setFormData({ ...formData, engagementPlatform: event.target.value })}
+                      onChange={(event) =>
+                        setFormData({
+                          ...formData,
+                          engagementPlatform: event.target.value,
+                          engagementContentMode:
+                            event.target.value === '抖音' ? 'link' : formData.engagementContentMode,
+                        })
+                      }
                       style={baseInputStyle}
                     >
                       {followPlatformOptions.map((platform) => <option key={platform}>{platform}</option>)}
@@ -842,15 +933,147 @@ export function TaskCreate() {
                       </span>
                     </Field>
                   )}
-                  <Field label="互动内容链接" required error={showValidation && !formData.contentUrl.trim() ? '请输入内容链接' : ''}>
-                    <input
-                      value={formData.contentUrl}
-                      onChange={(event) => setFormData({ ...formData, contentUrl: event.target.value })}
-                      placeholder="粘贴指定笔记或视频链接"
-                      style={inputStyle(showValidation && !formData.contentUrl.trim())}
-                    />
+                  <Field label="互动内容方式" required>
+                    <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                      {[
+                        { value: 'link' as EngagementContentMode, label: '输入内容链接' },
+                        ...(formData.engagementPlatform === '抖音'
+                          ? []
+                          : [{ value: 'share_image' as EngagementContentMode, label: '上传分享图' }]),
+                      ].map((item) => {
+                        const checked = formData.engagementContentMode === item.value;
+                        return (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, engagementContentMode: item.value })}
+                            style={radioLikeButtonStyle(checked)}
+                          >
+                            <span style={radioCircleStyle(checked)} />
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </Field>
-                  <Field label="内容示例图">
+                  {formData.engagementContentMode === 'link' && (
+                    <Field label="互动内容链接" required error={showValidation && !formData.contentUrl.trim() ? '请输入内容链接' : ''}>
+                      <input
+                        value={formData.contentUrl}
+                        onChange={(event) => setFormData({ ...formData, contentUrl: event.target.value })}
+                        placeholder="粘贴指定笔记或视频链接"
+                        style={inputStyle(showValidation && !formData.contentUrl.trim())}
+                      />
+                    </Field>
+                  )}
+                  {formData.engagementContentMode === 'share_image' && (
+                    <Field
+                      label="上传分享图"
+                      required
+                      error={showValidation && !formData.engagementShareImagePreview ? '请上传分享图' : ''}
+                    >
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        <input
+                          id="engagement-share-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={(event) => {
+                            const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+                            if (!file) return;
+                            setFormData((current) => {
+                              if (current.engagementShareImagePreview) URL.revokeObjectURL(current.engagementShareImagePreview);
+                              return {
+                                ...current,
+                                engagementShareImage: file,
+                                engagementShareImagePreview: URL.createObjectURL(file),
+                              };
+                            });
+                            event.target.value = '';
+                          }}
+                          style={{ display: 'none' }}
+                        />
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                          {formData.engagementShareImagePreview ? (
+                            <div
+                              style={{
+                                width: 112,
+                                height: 112,
+                                border: '1px dashed #cbd5e1',
+                                borderRadius: 4,
+                                position: 'relative',
+                                overflow: 'hidden',
+                                background: '#fff',
+                              }}
+                            >
+                              <img
+                                src={formData.engagementShareImagePreview}
+                                alt="分享图预览"
+                                onClick={() => setPreviewImageUrl(formData.engagementShareImagePreview)}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData((current) => {
+                                    if (current.engagementShareImagePreview) URL.revokeObjectURL(current.engagementShareImagePreview);
+                                    return { ...current, engagementShareImage: null, engagementShareImagePreview: '' };
+                                  })
+                                }
+                                style={{
+                                  position: 'absolute',
+                                  top: 6,
+                                  right: 6,
+                                  width: 22,
+                                  height: 22,
+                                  borderRadius: 999,
+                                  border: 'none',
+                                  background: 'rgba(220,38,38,0.92)',
+                                  color: '#fff',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  padding: 0,
+                                  lineHeight: 1,
+                                }}
+                                aria-label="删除分享图"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <label
+                              htmlFor="engagement-share-image"
+                              style={{
+                                width: 112,
+                                height: 112,
+                                border: '1px dashed #cbd5e1',
+                                borderRadius: 4,
+                                background: '#fff',
+                                display: 'inline-flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 4,
+                                cursor: 'pointer',
+                                userSelect: 'none',
+                                color: '#4b5565',
+                              }}
+                            >
+                              <span style={{ fontSize: 34, lineHeight: 1, color: '#9aa4b2' }}>+</span>
+                              <span style={{ fontSize: 12, fontWeight: 600 }}>上传图片</span>
+                            </label>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
+                          分享图可在小红书内容详情页，点击「分享」后保存到本地获取，查看示例。
+                        </span>
+                      </div>
+                    </Field>
+                  )}
+                  <Field
+                    label="内容示例图"
+                  >
                     <div style={{ display: 'grid', gap: 10 }}>
                       <input
                         id="engagement-sample-image"
@@ -957,7 +1180,7 @@ export function TaskCreate() {
                         </label>}
                       </div>
                       <span style={{ fontSize: 12, color: '#687386', lineHeight: 1.5 }}>
-                        可上传内容的截图，方便用户快速找到对应内容进行互动，最多 3 张。
+                        可上传内容截图辅助引导，最多 3 张。
                       </span>
                     </div>
                   </Field>
@@ -1699,7 +1922,18 @@ export function TaskCreate() {
                 {scene !== 'engagement_reward' && (
                   <Field label="奖品选择" required error={showValidation && !selectedPrize ? '请添加奖品' : ''}>
                     <div style={{ display: 'grid', gap: 10 }}>
-                      <button type="button" onClick={() => openPrizeModal()} style={addPrizeButtonStyle}>
+                      <button
+                        type="button"
+                        onClick={() => openPrizeModal()}
+                        disabled={scene === 'follow' && !formData.followPlaybookEnabled}
+                        style={{
+                          ...addPrizeButtonStyle,
+                          opacity: scene === 'follow' && !formData.followPlaybookEnabled ? 0.52 : 1,
+                          cursor: scene === 'follow' && !formData.followPlaybookEnabled ? 'not-allowed' : 'pointer',
+                          color: scene === 'follow' && !formData.followPlaybookEnabled ? '#94a3b8' : addPrizeButtonStyle.color,
+                          border: scene === 'follow' && !formData.followPlaybookEnabled ? '1px solid #d8dee8' : addPrizeButtonStyle.border,
+                        }}
+                      >
                         <Plus size={22} />
                         添加奖品
                       </button>
@@ -1807,11 +2041,26 @@ export function TaskCreate() {
           </div>
         )}
         {showPrizeModal && (
-          <div style={modalOverlayStyle} onClick={() => setShowPrizeModal(false)}>
+          <div
+            style={modalOverlayStyle}
+            onClick={() => {
+              setShowPrizeModal(false);
+              setShowLotteryActivityModal(false);
+            }}
+          >
             <div style={modalPanelStyle} onClick={(event) => event.stopPropagation()}>
               <div style={modalHeaderStyle}>
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#172033' }}>添加奖品</h3>
-                <button type="button" onClick={() => setShowPrizeModal(false)} style={modalCloseStyle}>×</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPrizeModal(false);
+                    setShowLotteryActivityModal(false);
+                  }}
+                  style={modalCloseStyle}
+                >
+                  ×
+                </button>
               </div>
               <div style={modalBodyStyle}>
                 <Field label="奖品类型" required>
@@ -1908,16 +2157,19 @@ export function TaskCreate() {
                 {prizeForm.prizeType === 'lottery_chance' && (
                   <>
                     <Field label="转盘抽奖活动" required>
-                      <select
-                        value={prizeForm.lotteryActivityId}
-                        onChange={(event) => setPrizeForm({ ...prizeForm, lotteryActivityId: event.target.value })}
-                        style={baseInputStyle}
-                      >
-                        <option value="">请选择活动</option>
-                        <option value="lottery-new-user">新客抽奖转盘</option>
-                        <option value="lottery-seeding-booster">种草助推转盘</option>
-                        <option value="lottery-festival">节日福利转盘</option>
-                      </select>
+                      <div style={{ display: 'grid', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <button type="button" onClick={() => setShowLotteryActivityModal(true)} style={addPrizeButtonStyle}>
+                            <Plus size={22} />
+                            选择抽奖活动
+                          </button>
+                          <button type="button" style={giftManageLinkStyle}>活动管理</button>
+                        </div>
+                        <div style={giftInfoStyle}>
+                          <div>活动名称: {lotteryActivityOptions.find((item) => item.id === prizeForm.lotteryActivityId)?.name || '未选择'}</div>
+                          <div>活动ID: {prizeForm.lotteryActivityId || '--'}</div>
+                        </div>
+                      </div>
                     </Field>
                     <Field label="发放机会次数" required>
                       <div style={inlineInputWrapStyle}>
@@ -1991,10 +2243,60 @@ export function TaskCreate() {
                 {prizeError && <div style={errorBoxStyle}>{prizeError}</div>}
               </div>
               <div style={modalFooterStyle}>
-                <button type="button" onClick={() => setShowPrizeModal(false)} style={modalCancelStyle}>取消</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPrizeModal(false);
+                    setShowLotteryActivityModal(false);
+                  }}
+                  style={modalCancelStyle}
+                >
+                  取消
+                </button>
                 <button type="button" onClick={confirmPrize} style={modalConfirmStyle}>确定</button>
               </div>
             </div>
+            {showLotteryActivityModal && (
+              <div style={{ ...modalOverlayStyle, background: 'rgba(15,23,42,0.24)' }} onClick={() => setShowLotteryActivityModal(false)}>
+                <div style={{ ...modalPanelStyle, width: 520 }} onClick={(event) => event.stopPropagation()}>
+                  <div style={modalHeaderStyle}>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#172033' }}>选择抽奖活动</h3>
+                    <button type="button" onClick={() => setShowLotteryActivityModal(false)} style={modalCloseStyle}>×</button>
+                  </div>
+                  <div style={{ ...modalBodyStyle, display: 'grid', gap: 8 }}>
+                    {lotteryActivityOptions.map((item) => {
+                      const active = prizeForm.lotteryActivityId === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setPrizeForm({ ...prizeForm, lotteryActivityId: item.id });
+                            setShowLotteryActivityModal(false);
+                          }}
+                          style={{
+                            height: 40,
+                            borderRadius: 8,
+                            border: active ? '1px solid #3b82f6' : '1px solid #d8dee8',
+                            background: active ? '#eff6ff' : '#fff',
+                            color: active ? '#1d4ed8' : '#334155',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0 12px',
+                            fontSize: 13,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <span>{item.name}</span>
+                          <span style={{ fontSize: 12, color: active ? '#2563eb' : '#94a3b8' }}>{item.id}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -2070,6 +2372,10 @@ function getSceneKey(value: string | null): SceneKey {
 function isSceneValid(scene: SceneKey, data: {
   followTargets: Array<{ platform: string; account: string; sampleImage: File | null; sampleImagePreview: string; guideText: string }>;
   followRuleDescription: string;
+  followPlaybookEnabled: boolean;
+  engagementContentMode: EngagementContentMode;
+  engagementShareImagePreview: string;
+  engagementSampleImages: File[];
   contentUrl: string;
   engagementRuleDescription: string;
   interactionActions: string[];
@@ -2080,8 +2386,15 @@ function isSceneValid(scene: SceneKey, data: {
   engagementRewardRuleDescription: string;
   engagementRewardTiers: Array<{ interactionType: string; interactionAmount: number; prize: unknown }>;
 }) {
-  if (scene === 'follow') return !hasFollowTargetError(data.followTargets) && Boolean(data.followRuleDescription.trim());
-  if (scene === 'engagement') return Boolean(data.contentUrl.trim()) && data.interactionActions.length > 0 && Boolean(data.engagementRuleDescription.trim());
+  if (scene === 'follow') {
+    if (!data.followPlaybookEnabled) return true;
+    return !hasFollowTargetError(data.followTargets) && Boolean(data.followRuleDescription.trim());
+  }
+  if (scene === 'engagement') {
+    const hasContentSource =
+      data.engagementContentMode === 'link' ? Boolean(data.contentUrl.trim()) : Boolean(data.engagementShareImagePreview);
+    return hasContentSource && data.interactionActions.length > 0 && Boolean(data.engagementRuleDescription.trim());
+  }
   if (scene === 'engagement_reward') return Boolean(data.contentUrl.trim()) && Boolean(data.engagementRewardRuleDescription.trim()) && data.engagementRewardTiers.length > 0 && data.engagementRewardTiers.every((tier) => tier.interactionAmount > 0 && tier.prize !== null);
   return Boolean(data.seedingRuleDescription.trim());
 }

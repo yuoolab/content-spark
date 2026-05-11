@@ -1,19 +1,21 @@
 import { Outlet, Link, useLocation } from 'react-router';
 
-import { CheckSquare, FileText, LayoutDashboard } from 'lucide-react';
+import { CheckSquare, FileText } from 'lucide-react';
 
 const navItems = [
-  { path: '/backend/dashboard', label: '数据看板', icon: LayoutDashboard },
   { path: '/backend/tasks', label: '任务管理', icon: FileText },
   { path: '/backend/review', label: '内容审核', icon: CheckSquare },
 ];
 
 export function DashboardLayout() {
   const location = useLocation();
+  const isReviewRoute = location.pathname === '/backend/review' || location.pathname.startsWith('/backend/review/');
 
   const isActive = (path: string) => {
-    if (path === '/backend/dashboard') return location.pathname === '/backend/dashboard';
-    if (path === '/backend/tasks') return location.pathname === '/backend/tasks' || location.pathname.startsWith('/backend/tasks/');
+    if (path === '/backend/tasks') {
+      const isTaskRoute = location.pathname === '/backend/tasks' || location.pathname.startsWith('/backend/tasks/');
+      return isTaskRoute || !isReviewRoute;
+    }
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 

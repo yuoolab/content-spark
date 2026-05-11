@@ -10,7 +10,6 @@ import { InteractiveMarketing } from "./components/marketing/InteractiveMarketin
 import { TaskList as BackendTaskList } from "./components/tasks/TaskList";
 import { TaskCreate } from "./components/tasks/TaskCreate";
 import { ContentReview } from "./components/review/ContentReview";
-import { DataDashboard } from "./components/dashboard/DataDashboard";
 import { TaskDataDetail } from "./components/dashboard/TaskDataDetail";
 import { AccountVerification } from "./components/verification/AccountVerification";
 import { PlatformConfig } from "./components/platform/PlatformConfig";
@@ -46,7 +45,7 @@ export const router = createBrowserRouter(
       path: "/backend",
       Component: ShopLayout,
       children: [
-        { index: true, loader: () => redirect("/backend/dashboard") },
+        { index: true, loader: () => redirect("/backend/tasks") },
         { path: "interactive-marketing", Component: InteractiveMarketing },
         {
           path: "member/info",
@@ -72,7 +71,7 @@ export const router = createBrowserRouter(
         {
           Component: DashboardLayout,
           children: [
-            { path: "dashboard", Component: DataDashboard },
+            { path: "dashboard", loader: () => redirect("/backend/tasks") },
             { path: "tasks", Component: BackendTaskList },
             { path: "tasks/create", Component: TaskCreate },
             { path: "tasks/edit/:id", Component: TaskCreate },

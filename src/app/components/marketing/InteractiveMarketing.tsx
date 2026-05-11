@@ -55,7 +55,7 @@ const interactiveCards = [
     tagColor: '#52C41A',
     icon: '🎯',
     iconBg: '#EEF3FF',
-    link: '/backend/dashboard',
+    link: '/backend/tasks',
     highlight: true,
   },
 ];

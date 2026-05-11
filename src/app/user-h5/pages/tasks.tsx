@@ -36,9 +36,10 @@ import { PlatformLogo } from "../../components/platform/PlatformBadge";
 type DetailScene = NonNullable<Task["scene"]>;
 type FollowProofStatus = "待完成" | "已完成" | "审核中" | "已拒绝";
 type FollowProofState = { status: FollowProofStatus; rejectReason?: string; proofUrl?: string };
-type RewardPreviewKind = "points" | "gift" | "cash";
+type RewardPreviewKind = "points" | "gift" | "cash" | "lottery";
 type EngagementSubmitPreviewState = "pending" | "reviewing" | "rejected" | "approved";
-type ActivityStatusPreviewState = "未开始" | "进行中" | "已结束";
+type ActivityStatusPreviewState = "未开始" | "进行中" | "已结束" | "已关闭";
+type EngagementContentPreviewMode = "link" | "share_image";
 
 const formatTaskRange = (startDate: string, endDate: string) =>
   `${startDate.split("-").join("/")} 至 ${endDate.split("-").join("/")}`;
@@ -304,7 +305,7 @@ export function TaskDetailPage() {
   };
   const previewRewardParam = searchParams.get("reward");
   const previewRewardKind: RewardPreviewKind =
-    previewRewardParam === "gift" || previewRewardParam === "cash" ? previewRewardParam : "points";
+    previewRewardParam === "gift" || previewRewardParam === "cash" || previewRewardParam === "lottery" ? previewRewardParam : "points";
   const previewSubmitStateParam = searchParams.get("submitState");
   const previewSubmitState: EngagementSubmitPreviewState =
     previewSubmitStateParam === "reviewing" ||
@@ -317,8 +318,13 @@ export function TaskDetailPage() {
     previewActivityStatusParam === "upcoming"
       ? "未开始"
       : previewActivityStatusParam === "finished"
-      ? "已结束"
+      ? task.scene === "follow"
+        ? "已关闭"
+        : "已结束"
       : "进行中";
+  const previewContentViewParam = searchParams.get("contentView");
+  const previewEngagementContentMode: EngagementContentPreviewMode =
+    previewContentViewParam === "share_image" ? "share_image" : "link";
 
   return (
     <SceneTaskDetail
@@ -328,6 +334,7 @@ export function TaskDetailPage() {
       previewRewardKind={previewRewardKind}
       previewSubmitState={previewSubmitState}
       previewActivityStatus={previewActivityStatus}
+      previewEngagementContentMode={previewEngagementContentMode}
       accounts={accounts}
       submitContent={submitContent}
       startReminderSubscribed={startReminderSubscribed}
@@ -343,6 +350,7 @@ function SceneTaskDetail({
   previewRewardKind,
   previewSubmitState,
   previewActivityStatus,
+  previewEngagementContentMode,
   accounts,
   submitContent,
   startReminderSubscribed,
@@ -360,6 +368,7 @@ function SceneTaskDetail({
   previewRewardKind: RewardPreviewKind;
   previewSubmitState: EngagementSubmitPreviewState;
   previewActivityStatus: ActivityStatusPreviewState;
+  previewEngagementContentMode: EngagementContentPreviewMode;
   accounts: Array<{ platform: Platform; accountHandle: string }>;
   submitContent: (payload: {
     taskId: string;
@@ -391,6 +400,37 @@ function SceneTaskDetail({
   const actions = task.engagementActions ?? [];
   const hasComment = actions.includes("评论");
   const baseReward = task.rewardSpecs.find((spec) => spec.kind === "base");
+  const followPerAccountReward =
+    scene === "follow" && targets.length > 0 && baseReward?.rewardType === "points"
+      ? Math.max(0, Math.floor(baseReward.amount / targets.length))
+      : 0;
+  const followAccountRewardSummary =
+    scene === "follow" && targets.length > 0
+      ? targets.reduce(
+          (acc, _, index) => {
+            const status = followProofStates[index]?.status ?? "待完成";
+            if (status === "已完成") {
+              acc.arrivedCount += 1;
+              acc.arrivedAmount += followPerAccountReward;
+            } else if (status === "审核中") {
+              acc.pendingCount += 1;
+              acc.pendingAmount += followPerAccountReward;
+            } else {
+              acc.unfinishedCount += 1;
+              acc.unfinishedAmount += followPerAccountReward;
+            }
+            return acc;
+          },
+          {
+            arrivedCount: 0,
+            pendingCount: 0,
+            unfinishedCount: 0,
+            arrivedAmount: 0,
+            pendingAmount: 0,
+            unfinishedAmount: 0,
+          },
+        )
+      : null;
   const performanceSpecs = task.rewardSpecs.filter((spec) => spec.kind !== "base");
   const detailHighlights = getDetailHighlights(task, scene);
   const sceneRules = getSceneRules(task, scene);
@@ -399,6 +439,17 @@ function SceneTaskDetail({
   const submitButtonText = scene === "follow" || scene === "engagement" ? "去提交凭证" : "去提交内容";
   const displayStatus = scene === "follow" || scene === "engagement" ? previewActivityStatus : task.status;
   const isTaskUpcoming = displayStatus === "未开始";
+  const isActivityClosed = displayStatus === "已结束" || displayStatus === "已关闭";
+  const followRewardCtaLabel =
+    previewRewardKind === "lottery" || task.rewardSpecs.some((spec) => spec.rewardType === "lottery")
+      ? "去抽奖"
+      : "查看奖励";
+  const followRewardProgressText = (arrivedAmount: number) => {
+    if (previewRewardKind === "cash") return `已发放 ${arrivedAmount} 元红包`;
+    if (previewRewardKind === "gift") return `已发放 ${arrivedAmount} 份赠品`;
+    if (previewRewardKind === "lottery") return `已发放 ${arrivedAmount} 次抽奖机会`;
+    return `已发放 ${arrivedAmount} 星云币`;
+  };
   const useInlineSeedingSubmit = scene === "seeding" && task.name === "春季新品种草计划";
   const engagementSubmitMeta =
     previewSubmitState === "reviewing"
@@ -530,19 +581,21 @@ function SceneTaskDetail({
       <div style={{ position: "relative" }}>
       <div style={{ display: "grid", gap: 12 }}>
         <>
-          <section style={followHeroShellStyle}>
-            <h1 style={{ ...followHeroTitleStyle, display: "flex", alignItems: "center", gap: 8 }}>
-              <Pill tone={displayStatus === "进行中" ? "green" : displayStatus === "未开始" ? "orange" : "gray"}>{displayStatus}</Pill>
-              {task.name}
-            </h1>
-            <div style={followHeroDescStyle}>{meta.description}</div>
-            <div style={detailHeroMetaListStyle}>
-              <span style={detailHeroMetaPillStyle}>
-                <CalendarDays size={13} />
-                {formatTaskRange(task.startDate, task.endDate)}
-              </span>
-            </div>
-          </section>
+          {scene !== "follow" && (
+            <section style={followHeroShellStyle}>
+              <h1 style={{ ...followHeroTitleStyle, display: "flex", alignItems: "center", gap: 8 }}>
+                <Pill tone={displayStatus === "进行中" ? "green" : displayStatus === "未开始" ? "orange" : "gray"}>{displayStatus}</Pill>
+                {task.name}
+              </h1>
+              <div style={followHeroDescStyle}>{meta.description}</div>
+              <div style={detailHeroMetaListStyle}>
+                <span style={detailHeroMetaPillStyle}>
+                  <CalendarDays size={13} />
+                  {formatTaskRange(task.startDate, task.endDate)}
+                </span>
+              </div>
+            </section>
+          )}
 
           <Card style={{ padding: 14, borderRadius: 22, border: "1px solid rgba(218,228,242,0.95)" }}>
             <DetailCardTitle title="任务速览" />
@@ -610,11 +663,17 @@ function SceneTaskDetail({
                               <Copy size={14} />
                             </button>
                           </div>
-                          {!isTaskUpcoming ? <span style={followStatusTagStyle(followState)}>{followState}</span> : null}
+                          {!isTaskUpcoming ? (
+                            followState === "已完成" ? (
+                              <span style={followRewardDoneTagStyle}>已发奖</span>
+                            ) : (
+                              <span style={followStatusTagStyle(followState)}>{followState}</span>
+                            )
+                          ) : null}
                         </div>
                         <div style={followCardFooterStyle}>
                           <div style={detailSecondaryTextStyle}>请复制账号名称在对应平台搜索后关注，详情请看示例图。</div>
-                          {!isTaskUpcoming && displayStatus !== "已结束" && !hideUpload && (
+                          {!isTaskUpcoming && !isActivityClosed && !hideUpload && (
                             <button type="button" style={followProofUploadTriggerStyle(isRejected)} onClick={() => openFollowUploadSheet(index)}>
                               {isRejected ? "重新上传" : "上传截图"}
                             </button>
@@ -643,21 +702,6 @@ function SceneTaskDetail({
                   </span>
                 }
               />
-              <InfoRow
-                icon={Link2}
-                label="内容链接"
-                value={
-                  <button
-                    type="button"
-                    onClick={() => void handleCopyText(task.engagementContentUrl ?? "")}
-                    style={linkCopyButtonStyle}
-                    aria-label="复制内容链接"
-                  >
-                    <span>{shortLink(task.engagementContentUrl ?? "以后台配置链接为准")}</span>
-                    <Copy size={14} />
-                  </button>
-                }
-              />
               <InfoRow icon={ThumbsUp} label="互动动作" value={actions.join("、")} />
               {hasComment && task.commentKeyword && (
                 <InfoRow
@@ -677,6 +721,51 @@ function SceneTaskDetail({
                     </span>
                   }
                 />
+              )}
+              {previewEngagementContentMode === "link" ? (
+                <InfoRow
+                  icon={Link2}
+                  label="内容链接"
+                  value={
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyText(task.engagementContentUrl ?? "")}
+                      style={linkCopyButtonStyle}
+                      aria-label="复制内容链接"
+                    >
+                      <span>{shortLink(task.engagementContentUrl ?? "以后台配置链接为准")}</span>
+                      <Copy size={14} />
+                    </button>
+                  }
+                />
+              ) : (
+                <div
+                  style={{ ...sceneImagePreviewStyle, cursor: "pointer" }}
+                  onClick={() =>
+                    setPreviewImage({
+                      src:
+                        task.engagementSampleImage ??
+                        "https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=500&q=80",
+                      title: "分享图",
+                    })
+                  }
+                >
+                  <div style={sceneImagePreviewHeadStyle}>
+                    <ImageIcon size={15} color={meta.accent} />
+                    <span>分享图</span>
+                  </div>
+                  <img
+                    src={
+                      task.engagementSampleImage ??
+                      "https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=500&q=80"
+                    }
+                    alt="分享图"
+                    style={scenePreviewImageStyle}
+                  />
+                  <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
+                    请保存图片到本地使用微信或小红书识别二维码查看原帖内容
+                  </div>
+                </div>
               )}
               {task.engagementSampleImage && (
                 <div
@@ -799,7 +888,7 @@ function SceneTaskDetail({
               extra={
                 !isTaskUpcoming ? (
                   <button type="button" style={followRewardLinkButtonStyle} onClick={() => navigate("/rewards")}>
-                    <span>查看奖励</span>
+                    <span>{followRewardCtaLabel}</span>
                     <ChevronRight size={14} />
                   </button>
                 ) : null
@@ -809,6 +898,27 @@ function SceneTaskDetail({
             <DetailCardTitle title={scene === "engagement_reward" ? "奖励与计奖方式" : "奖励说明"} />
           )}
           <div style={{ display: "grid", gap: 10 }}>
+            {scene === "follow" && followAccountRewardSummary ? (
+              <div style={followRewardProgressWrapStyle}>
+                <div style={followRewardProgressHeaderStyle}>
+                  <span>奖励进度</span>
+                  <span>
+                    已到账 {followAccountRewardSummary.arrivedCount}/{targets.length}
+                  </span>
+                </div>
+                <div style={followRewardProgressBarStyle}>
+                  <div
+                    style={{
+                      ...followRewardProgressValueStyle,
+                      width: `${Math.min(100, (followAccountRewardSummary.arrivedCount / Math.max(1, targets.length)) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <div style={followRewardProgressSingleMetaStyle}>
+                  {followRewardProgressText(followAccountRewardSummary.arrivedAmount)}
+                </div>
+              </div>
+            ) : null}
             {task.rewardSpecs.map((spec) => (
               <RewardSpecCard key={spec.id} spec={spec} previewRewardKind={previewRewardKind} />
             ))}
@@ -1191,6 +1301,8 @@ function getDetailHighlights(task: Task, scene: DetailScene) {
       ? `${baseReward.amount} 元起`
       : baseReward.rewardType === "gift"
         ? "赠品奖励"
+        : baseReward.rewardType === "lottery"
+          ? `${Math.max(1, baseReward.amount)} 次抽奖机会`
         : `${baseReward.amount} 星云币起`
     : "按规则发放";
 
@@ -1223,7 +1335,6 @@ function getSceneRules(task: Task, scene: DetailScene) {
   if (scene === "follow") {
     return [
       ...(task.proofDescription?.split(/\n+/).map((item) => item.trim()).filter(Boolean) ?? []),
-      `需完成全部指定账号关注后再提交，当前共 ${task.followTargets?.length ?? 0} 个账号。`,
       `截图需清晰展示账号名称与已关注状态。`,
     ];
   }
@@ -1310,16 +1421,39 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 }
 
 function RewardSpecCard({ spec, previewRewardKind }: { spec: TaskRewardSpec; previewRewardKind: RewardPreviewKind }) {
-  const rewardTone = (rewardType: "points" | "gift" | "cash") =>
-    rewardType === "gift" ? "orange" : rewardType === "cash" ? "red" : "blue";
+  const rewardTone = (rewardType: "points" | "gift" | "cash" | "lottery") =>
+    rewardType === "gift" ? "orange" : rewardType === "cash" ? "red" : rewardType === "lottery" ? "gray" : "blue";
 
-  const rewardValue = (rewardType: "points" | "gift" | "cash", amount: number, giftName?: string) => {
+  const rewardValue = (rewardType: "points" | "gift" | "cash" | "lottery", amount: number, giftName?: string) => {
     if (rewardType === "gift") return giftName ? `赠品：${GIFT_LABELS[giftName] ?? giftName}` : "赠品";
     if (rewardType === "cash") return `${amount} 元红包`;
+    if (rewardType === "lottery") return `${amount} 次抽奖机会`;
     return `${amount} 星云币`;
   };
 
-  const renderRewardBadge = (rewardType: "points" | "gift" | "cash", amount: number, giftName?: string) => {
+  const renderRewardBadge = (rewardType: "points" | "gift" | "cash" | "lottery", amount: number, giftName?: string) => {
+    if (rewardType === "lottery") {
+      return (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            borderRadius: 999,
+            background: "linear-gradient(135deg, rgba(124,58,237,0.16), rgba(168,85,247,0.08))",
+            border: "1px solid rgba(124,58,237,0.28)",
+            color: "#7c3aed",
+            fontSize: 12,
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <Zap size={12} />
+          {rewardValue(rewardType, amount, giftName)}
+        </span>
+      );
+    }
     if (rewardType !== "gift") {
       return <Pill tone={rewardTone(rewardType)}>{rewardValue(rewardType, amount, giftName)}</Pill>;
     }
@@ -1383,12 +1517,16 @@ function RewardSpecCard({ spec, previewRewardKind }: { spec: TaskRewardSpec; pre
       ? { name: GIFT_LABELS.g1, image: GIFT_IMAGES.g1, tone: "rgba(250,173,20,0.12)", border: "rgba(250,173,20,0.24)" }
       : previewRewardKind === "cash"
       ? { name: "现金红包", image: GIFT_IMAGES.g5, tone: "rgba(255,77,79,0.10)", border: "rgba(255,77,79,0.24)" }
+      : previewRewardKind === "lottery"
+      ? { name: "抽奖机会", image: GIFT_IMAGES.g8, tone: "rgba(124,58,237,0.10)", border: "rgba(124,58,237,0.24)" }
       : { name: "积分奖励", image: GIFT_IMAGES.g2, tone: "rgba(36,116,255,0.10)", border: "rgba(36,116,255,0.22)" };
   const previewAmountText =
     previewRewardKind === "points"
       ? `${spec.amount} 星云币`
       : previewRewardKind === "cash"
       ? `${spec.amount} 元红包`
+      : previewRewardKind === "lottery"
+      ? "1 次抽奖机会"
       : "价值299元";
 
   return (
@@ -1880,6 +2018,51 @@ const followCardFooterStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "space-between",
   gap: 8,
+};
+const followRewardProgressWrapStyle: React.CSSProperties = {
+  marginBottom: 10,
+  padding: "10px 12px",
+  borderRadius: 12,
+  background: "rgba(247,250,255,0.95)",
+  border: "1px solid rgba(203,213,225,0.8)",
+  display: "grid",
+  gap: 8,
+};
+const followRewardProgressHeaderStyle: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  fontSize: 12,
+  fontWeight: 700,
+  color: "#334155",
+};
+const followRewardProgressBarStyle: React.CSSProperties = {
+  width: "100%",
+  height: 8,
+  borderRadius: 999,
+  background: "rgba(148,163,184,0.24)",
+  overflow: "hidden",
+};
+const followRewardProgressValueStyle: React.CSSProperties = {
+  height: "100%",
+  borderRadius: 999,
+  background: "linear-gradient(90deg,#22c55e 0%,#16a34a 100%)",
+};
+const followRewardProgressSingleMetaStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: "#64748b",
+};
+const followRewardDoneTagStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  height: 24,
+  padding: "0 10px",
+  borderRadius: 999,
+  background: "rgba(34,197,94,0.12)",
+  color: "#16a34a",
+  fontSize: 12,
+  fontWeight: 700,
+  whiteSpace: "nowrap",
 };
 
 const followStatusTagStyle = (status: FollowProofStatus): React.CSSProperties => {

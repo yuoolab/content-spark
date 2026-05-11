@@ -446,13 +446,16 @@ export function TaskList() {
             {SCENE_CARD_OPTIONS.map((scene) => {
               const Icon = scene.icon;
               return (
-                <div
+                <Link
                   key={scene.value}
+                  to={`/backend/tasks/create?scene=${scene.value}`}
                   style={{
                     border: `1px solid var(--border)`,
                     borderRadius: '8px',
                     background: '#fff',
                     overflow: 'hidden',
+                    display: 'block',
+                    textDecoration: 'none',
                   }}
                 >
                   <div
@@ -485,19 +488,16 @@ export function TaskList() {
                         <span style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: 'var(--foreground)' }}>
                           {scene.label}
                         </span>
-                        <Link
-                          to={`/backend/tasks/create?scene=${scene.value}`}
-                          style={{ color: 'rgba(36,116,255,1)', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap', textDecoration: 'none' }}
-                        >
-                          去创建
-                        </Link>
+                        <span style={{ color: (scene.value === 'seeding' || scene.value === 'engagement_reward') ? 'var(--muted-foreground)' : 'rgba(36,116,255,1)', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                          {(scene.value === 'seeding' || scene.value === 'engagement_reward') ? '敬请期待' : '去创建'}
+                        </span>
                       </span>
                       <span style={{ display: 'block', marginTop: '3px', fontSize: '12px', color: 'var(--foreground)' }}>
                         {scene.playbook}
                       </span>
                     </span>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

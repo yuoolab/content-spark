@@ -808,7 +808,7 @@ export function ContentReview() {
       submitTime: '2026-04-17 10:30',
       status: 'rejected',
       rejectReason: '内容未包含必须话题标签',
-      reviewedBy: '系统审核员',
+      reviewedBy: '系统审核',
       reviewedAt: '2026-04-17 11:02',
     },
     {
@@ -1539,7 +1539,7 @@ export function ContentReview() {
               padding: '10px 20px',
               display: 'flex',
               alignItems: 'center',
-              gap: '18px',
+              gap: '26px',
               minWidth: 'fit-content',
             }}
           >
@@ -1547,7 +1547,6 @@ export function ContentReview() {
               { label: '用户', width: '140px' },
               { label: '所属任务', width: '160px' },
               { label: '任务图片', width: '104px' },
-              { label: '内容标题', width: '200px' },
               { label: '提交时间', width: '150px' },
               { label: '审核状态', width: '96px' },
               { label: '所属平台', width: '72px' },
@@ -1615,7 +1614,7 @@ export function ContentReview() {
                   boxShadow: 'var(--elevation-sm)',
                   transition: 'box-shadow 0.15s',
                   display: 'flex',
-                  gap: '18px',
+                  gap: '26px',
                   alignItems: 'flex-start',
                   minWidth: 'fit-content',
                 }}
@@ -1757,34 +1756,6 @@ export function ContentReview() {
                     )}
                   </div>
 
-                  {/* Main Content */}
-                  <div style={{ width: '200px', minWidth: '200px', flexShrink: 0 }}>
-                    {/* Top Row */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        marginBottom: submission.rejectReason ? '12px' : '0',
-                      }}
-                    >
-                      <div style={{ minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontSize: 'var(--text-h4)',
-                            fontWeight: 'var(--font-weight-medium)',
-                            color: 'var(--foreground)',
-                            marginBottom: '5px',
-                            lineHeight: '1.4',
-                          }}
-                        >
-                          {submission.scene === 'follow' || submission.scene === 'engagement' ? '-' : submission.contentTitle}
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-
                   {/* Submit Time Column */}
                   <div
                     style={{
@@ -1873,7 +1844,7 @@ export function ContentReview() {
                         alignSelf: 'center',
                       }}
                     >
-                      <span style={{ color: 'var(--foreground)' }}>{submission.reviewedBy || '系统审核员'}</span>
+                      <span style={{ color: 'var(--foreground)' }}>{submission.reviewedBy || '系统审核'}</span>
                       <span>{submission.reviewedAt || submission.submitTime}</span>
                     </div>
                   )}
@@ -1887,13 +1858,16 @@ export function ContentReview() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: '8px',
-                      flexWrap: 'wrap',
+                      flexWrap: 'nowrap',
+                      whiteSpace: 'nowrap',
                       flexShrink: 0,
                       alignSelf: 'stretch',
                       position: 'sticky',
                       right: 0,
                       background: '#ffffff',
                       zIndex: 1,
+                      paddingTop: 8,
+                      paddingBottom: 8,
                       paddingRight: 20,
                       boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.08)',
                     }}
@@ -1906,7 +1880,7 @@ export function ContentReview() {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '4px',
-                        padding: '2px 0',
+                        padding: '2px 6px',
                         background: 'none',
                         border: 'none',
                         textDecoration: 'none',
@@ -1927,7 +1901,7 @@ export function ContentReview() {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
-                          padding: '2px 0',
+                          padding: '2px 6px',
                           background: 'none',
                           border: 'none',
                           cursor: 'pointer',
@@ -1948,7 +1922,7 @@ export function ContentReview() {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '4px',
-                            padding: '2px 0',
+                            padding: '2px 6px',
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',
@@ -1965,7 +1939,7 @@ export function ContentReview() {
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '4px',
-                            padding: '2px 0',
+                            padding: '2px 6px',
                             background: 'none',
                             border: 'none',
                             cursor: 'pointer',

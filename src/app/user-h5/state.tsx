@@ -6,7 +6,7 @@ export type TaskStatus = "进行中" | "未开始" | "已结束";
 export type SubmissionStatus = "待审核" | "已通过" | "已拒绝";
 export type RewardStatus = "待到账" | "已到账" | "已失效";
 export type MessageType = "审核" | "奖励" | "账号" | "系统";
-export type RewardType = "points" | "gift" | "cash";
+export type RewardType = "points" | "gift" | "cash" | "lottery";
 export type RewardMetric = "likes" | "comments" | "collections" | "combined";
 export type RewardReleaseMode = "after_end" | "after_review";
 
@@ -257,12 +257,12 @@ const initialTasks: Task[] = [
       {
         id: "task-follow-1-base",
         kind: "base",
-        title: "关注全部账号奖励",
+        title: "关注账号奖励",
         rewardType: "points",
         amount: 80,
         releaseMode: "after_review",
         releaseDays: 2,
-        note: "关注全部指定账号并审核通过后发放奖励。",
+        note: "每个账号关注后，待审核通过后发放奖励。",
       },
     ],
   },
@@ -476,7 +476,7 @@ const initialTasks: Task[] = [
         metric: "collections",
         rules: [
           { threshold: 80, rewardType: "points", amount: 80 },
-          { threshold: 20, rewardType: "points", amount: 120 },
+          { threshold: 20, rewardType: "lottery", amount: 2 },
           { threshold: 50, rewardType: "cash", amount: 30 },
         ],
         releaseMode: "after_end",
