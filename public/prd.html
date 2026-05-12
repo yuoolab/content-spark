@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>互动加粉 & 内容互动 PRD</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: #f5f7fa;
+    color: #1a1a2e;
+    line-height: 1.7;
+    padding: 0 0 80px;
+  }
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 16px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(102,126,234,0.3);
+  }
+  .top-bar h1 { font-size: 18px; font-weight: 800; letter-spacing: 0.5px; }
+  .top-bar .meta { font-size: 13px; opacity: 0.85; }
+  .container { max-width: 960px; margin: 32px auto; padding: 0 24px; }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 36px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #eef0f5;
+  }
+  h2 {
+    font-size: 22px; font-weight: 800; color: #1a1a2e;
+    margin: 0 0 20px; padding-bottom: 12px;
+    border-bottom: 3px solid #667eea;
+    display: inline-block;
+  }
+  h3 {
+    font-size: 17px; font-weight: 700; color: #2d3748;
+    margin: 28px 0 14px;
+    padding-left: 12px;
+    border-left: 4px solid #667eea;
+  }
+  h4 {
+    font-size: 15px; font-weight: 700; color: #4a5568;
+    margin: 22px 0 10px;
+  }
+  h5 {
+    font-size: 14px; font-weight: 700; color: #667eea;
+    margin: 18px 0 8px;
+  }
+  p { margin: 8px 0; font-size: 14px; }
+  strong { color: #2d3748; }
+  ul, ol { margin: 8px 0 8px 24px; font-size: 14px; }
+  li { margin: 4px 0; }
+  hr { border: none; border-top: 1px solid #e8ecf1; margin: 28px 0; }
+  table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 18px;
+    font-size: 13px; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff; font-weight: 700; text-align: left;
+    padding: 10px 14px; font-size: 12px; letter-spacing: 0.3px;
+  }
+  tbody td {
+    padding: 9px 14px; border-bottom: 1px solid #f0f2f5;
+    vertical-align: top;
+  }
+  tbody tr:hover { background: #f8f9ff; }
+  tbody tr:nth-child(even) { background: #fafbff; }
+  tbody tr:nth-child(even):hover { background: #f0f2ff; }
+  code {
+    background: #f0f2ff; color: #5b21b6; padding: 2px 6px;
+    border-radius: 4px; font-size: 12.5px; font-family: "SF Mono", Menlo, monospace;
+  }
+  pre {
+    background: #1e1e2e; color: #cdd6f4; padding: 18px 22px;
+    border-radius: 10px; margin: 12px 0; overflow-x: auto;
+    font-size: 12.5px; line-height: 1.65;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+  }
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 700; margin: 0 2px;
+  }
+  .tag-blue { background: #e8f0fe; color: #1a56db; }
+  .tag-green { background: #d4edda; color: #155724; }
+  .tag-orange { background: #fff3cd; color: #856404; }
+  .tag-red { background: #f8d7da; color: #721c24; }
+  .tag-purple { background: #ede7f6; color: #5b21b6; }
+  .toc { margin: 16px 0; }
+  .toc a {
+    color: #667eea; text-decoration: none; font-size: 13px;
+    display: inline-block; margin: 3px 0; padding: 2px 0;
+    border-bottom: 1px dashed #c5cae9;
+  }
+  .toc a:hover { color: #764ba2; border-bottom-color: #764ba2; }
+  .section-anchor { scroll-margin-top: 80px; }
+  .info-box {
+    background: linear-gradient(135deg, #e8f0fe 0%, #f0e8fe 100%);
+    border: 1px solid #c5cae9; border-radius: 10px;
+    padding: 14px 18px; margin: 12px 0; font-size: 13px;
+  }
+  .warn-box {
+    background: #fff8e1; border: 1px solid #ffe082;
+    border-radius: 10px; padding: 14px 18px; margin: 12px 0; font-size: 13px;
+  }
+  .checklist { list-style: none; margin-left: 0; }
+  .checklist li { padding: 3px 0; }
+  .checklist li::before { content: "☐ "; color: #667eea; font-weight: 700; }
+  @media (max-width: 768px) {
+    .container { padding: 0 12px; }
+    .card { padding: 20px 16px; border-radius: 12px; }
+    table { font-size: 12px; }
+    thead th, tbody td { padding: 7px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>互动加粉 & 内容互动 产品需求文档（PRD）</h1>
+  <div class="meta">v1.1 | 2026-05-12 | 更新稿</div>
+</div>
+
+<div class="container">
+
+<!-- TOC -->
+<div class="card">
+  <h2>目录</h2>
+  <div class="toc">
+    <a href="#s1">1. 文档概述</a><br>
+    <a href="#s2">2. 场景一：互动加粉（账号加粉）</a><br>
+    <a href="#s3">3. 场景二：内容互动</a><br>
+    <a href="#s4">4. 共用功能模块</a><br>
+    <a href="#s5">5. 数据模型</a><br>
+    <a href="#s6">6. 非功能需求</a><br>
+    <a href="#s7">7. 关键业务流程图</a><br>
+    <a href="#s8">8. 两个场景的功能对比</a><br>
+    <a href="#s9">9. 验收标准</a><br>
+    <a href="#s10">10. 待确认项目</a><br>
+  </div>
+</div>
+
+<!-- Section 1 -->
+<div class="card" id="s1">
+<h2>1. 文档概述</h2>
+
+<h3>1.1 背景与目标</h3>
+<p>本 PRD 聚焦于公域内容激励工具中两个核心已上线场景：<strong>互动加粉（账号加粉）</strong>和<strong>内容互动</strong>。这两个场景分别解决商家在私域运营中的两大痛点：</p>
+<ul>
+  <li><strong>互动加粉</strong>：商家需要将公域平台的流量沉淀为自有账号的粉丝，但缺乏低成本、规模化的引导手段</li>
+  <li><strong>内容互动</strong>：商家的重点笔记/短视频需要基础互动量（点赞、评论、收藏）来突破平台冷启动阈值，但缺少激励真实用户参与互动的工具</li>
+</ul>
+<p><strong>业务目标：</strong></p>
+<ul>
+  <li>帮助商家以任务激励方式批量引导用户关注官方社媒账号，实现账号矩阵导流</li>
+  <li>帮助商家为重点公域内容快速积累真实互动数据，提升内容曝光和推荐权重</li>
+  <li>建立「任务发布 &rarr; 用户参与 &rarr; 内容审核 &rarr; 奖励发放」的完整闭环</li>
+</ul>
+
+<h3>1.2 系统架构概览</h3>
+<p>本系统包含两个独立的前端界面：</p>
+<table>
+  <thead><tr><th>界面</th><th>端</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>用户端 H5（微信小程序）</td><td>C 端</td><td>用户浏览任务、提交凭证、查看审核状态和奖励</td></tr>
+    <tr><td>商家后台（SaaS 管理端）</td><td>B 端</td><td>商家运营人员配置任务、审核内容、查看数据看板</td></tr>
+  </tbody>
+</table>
+<div class="info-box">
+  <strong>后台导航结构</strong>：后台侧边栏仅保留「任务管理」和「内容审核」两个入口。原「数据看板」已下线，<code>/backend/dashboard</code> 路径统一重定向至 <code>/backend/tasks</code>，任务管理作为后台主工作台。互动营销入口中「内容激励」直接跳转至任务管理页。
+</div>
+</div>
+
+<!-- Section 2 -->
+<div class="card" id="s2">
+<h2>2. 场景一：互动加粉（账号加粉）</h2>
+
+<h3>2.1 场景定义</h3>
+<p>商家创建「账号加粉」任务，指定需要用户关注的官方社媒账号列表，用户按要求关注后上传截图凭证，审核通过即获得奖励。适用于拉新关注、账号矩阵导流、会员关注认证等场景。</p>
+
+<h3>2.2 商家后台功能</h3>
+
+<h4>2.2.1 任务创建与配置</h4>
+<p><strong>入口</strong>：任务管理页面 &rarr; 场景卡片「账号加粉」&rarr; 点击「去创建」&rarr; <code>/backend/tasks/create?scene=follow</code></p>
+<p><strong>页面结构</strong>：任务创建页分为两个 Tab——「任务配置」和「账号管理」。</p>
+
+<h5>Tab 1：任务配置</h5>
+<table>
+  <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>任务名称</td><td>文本</td><td>是</td><td>用户端可见，如「官方账号关注任务」</td></tr>
+    <tr><td>任务说明</td><td>多行文本</td><td>否</td><td>对用户的补充说明</td></tr>
+    <tr><td>活动时间</td><td>日期范围</td><td>是</td><td>开始日期 ~ 结束日期</td></tr>
+    <tr><td>关注奖励模式</td><td>单选</td><td>是</td><td>「全部关注后统一奖励」/「每个账号独立奖励」</td></tr>
+    <tr><td>每人参与上限</td><td>数字</td><td>是</td><td>默认 1，同一用户可参与次数</td></tr>
+    <tr><td>关注账号列表</td><td>动态列表</td><td>是</td><td>从「账号管理」中已维护的账号中选择，至少 1 个</td></tr>
+    <tr><td>规则说明</td><td>多行文本</td><td>否</td><td>对用户的规则补充描述</td></tr>
+    <tr><td>场景攻略</td><td>描述卡片 + 开关</td><td>否</td><td>以图文卡片形式展示加粉流程三步骤（查看账号并完成关注 &rarr; 上传账号关注截图 &rarr; 审核通过发放奖励），可开关控制是否展示。关闭后下方关注账号列表和规则说明置灰不可编辑，校验放宽，保存按钮可正常提交</td></tr>
+    <tr><td>奖品配置</td><td>奖品弹窗</td><td>是</td><td>支持积分、现金红包、赠品、抽奖机会四种类型</td></tr>
+    <tr><td>审核后允许重新提交</td><td>开关</td><td>是</td><td>默认开启，拒绝后用户可重新上传截图</td></tr>
+  </tbody>
+</table>
+
+<p><strong>关注账号列表配置</strong>（每个目标账号）：</p>
+<table>
+  <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>平台</td><td>下拉选择</td><td>小红书、抖音</td></tr>
+    <tr><td>账号名称</td><td>文本</td><td>需关注的官方账号名称</td></tr>
+    <tr><td>示例图片</td><td>图片上传</td><td>展示给用户的关注成功示例截图</td></tr>
+    <tr><td>引导文案</td><td>文本</td><td>针对该账号的额外引导说明</td></tr>
+  </tbody>
+</table>
+<p><strong>拖拽排序</strong>：支持通过拖拽调整关注账号的展示顺序。</p>
+
+<h5>Tab 2：账号管理</h5>
+<p>商家在此维护可被任务关联的官方账号库。</p>
+<table>
+  <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>平台</td><td>下拉选择</td><td>小红书、抖音</td></tr>
+    <tr><td>账号名称</td><td>文本</td><td>官方账号名称</td></tr>
+    <tr><td>头像图片</td><td>图片上传</td><td>账号头像</td></tr>
+    <tr><td>累计粉丝数</td><td>数字</td><td>仅展示用</td></tr>
+    <tr><td>任务引流关注数</td><td>数字</td><td>展示该账号通过任务获得的关注数，以黄色徽章样式展示</td></tr>
+  </tbody>
+</table>
+<p><strong>业务规则</strong>：</p>
+<ul>
+  <li>已被任务关联的账号不可删除，需先解除关联；删除时若该账号已被关注账号列表引用，弹窗提示「该账号已被任务关联，暂不可删除。请先在关注账号列表中替换或移除后再删除。」</li>
+  <li>至少保留 1 个账号</li>
+  <li>支持新增和删除账号</li>
+  <li>账号上限最多 20 个，达到上限后新增按钮禁用</li>
+</ul>
+
+<h5>奖品配置弹窗</h5>
+<table>
+  <thead><tr><th>奖品类型</th><th>配置项</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>积分</td><td>积分数量</td><td>如 80 积分</td></tr>
+    <tr><td>现金红包</td><td>红包类型（拼手气/固定金额）、个数、总金额</td><td>需接入微信支付</td></tr>
+    <tr><td>赠品</td><td>赠品名称</td><td>实物/虚拟赠品</td></tr>
+    <tr><td>抽奖机会</td><td>关联转盘活动、发放次数</td><td>通过弹窗选择转盘活动（如新客抽奖转盘、种草助推转盘、节日福利转盘），展示已选活动名称和 ID</td></tr>
+  </tbody>
+</table>
+<p><strong>奖品公共配置</strong>：</p>
+<table>
+  <thead><tr><th>字段</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>奖品名称</td><td>用户端可见的奖品名称</td></tr>
+    <tr><td>奖品图片</td><td>用户端展示的奖品图片</td></tr>
+    <tr><td>奖品描述</td><td>奖品的详细描述</td></tr>
+  </tbody>
+</table>
+<div class="info-box">
+  <strong>抽奖机会配置</strong>：选择抽奖活动时弹出活动选择弹窗（替代下拉选择），展示预置的转盘活动列表。选定后展示活动名称和 ID，支持「活动管理」入口跳转。抽奖机会以紫色渐变徽章样式展示（带闪电图标）。
+</div>
+
+<h4>2.2.2 任务列表管理</h4>
+<p><strong>入口</strong>：<code>/backend/tasks</code></p>
+<p><strong>场景筛选</strong>：任务列表默认按场景筛选，支持「内容互动」为默认选项。任务列表页顶部展示 4 个场景创建卡片（账号加粉、内容互动、内容种草、效果种草），每个卡片有独立图标和配色。整张卡片可点击跳转至对应场景的创建页面，其中「账号加粉」和「内容互动」可正常创建，「内容种草」和「效果种草」卡片文案显示「敬请期待」。</p>
+
+<h4>2.2.3 内容审核（加粉凭证审核）</h4>
+<p><strong>入口</strong>：<code>/backend/review</code></p>
+<table>
+  <thead><tr><th>列</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>用户信息</td><td>头像 + 用户名</td></tr>
+    <tr><td>所属任务</td><td>任务名称 + 任务ID + 场景标签</td></tr>
+    <tr><td>任务图片</td><td>任务封面图（单图展示）</td></tr>
+    <tr><td>提交时间</td><td>用户提交时间</td></tr>
+    <tr><td>审核状态</td><td>待审核/已通过/已拒绝</td></tr>
+    <tr><td>所属平台</td><td>平台徽章</td></tr>
+    <tr><td>审核人</td><td>审核操作人（仅已通过/已拒绝时展示），默认显示「系统审核」</td></tr>
+    <tr><td>操作</td><td>查看内容（外链）、通过、拒绝</td></tr>
+  </tbody>
+</table>
+
+<h4>2.2.4 任务数据详情</h4>
+<p><strong>入口</strong>：任务列表 &rarr; 操作「数据」&rarr; <code>/backend/tasks/:id/data</code></p>
+<p><strong>KPI 卡片</strong>（5 个，加粉场景额外展示「奖品发放数量」）：</p>
+<table>
+  <thead><tr><th>指标</th><th>说明</th><th>计算方式</th></tr></thead>
+  <tbody>
+    <tr><td>总参与人数</td><td>提交并参与的去重用户数</td><td>COUNT(DISTINCT user_id)</td></tr>
+    <tr><td>内容提交量</td><td>提交的凭证总条数</td><td>COUNT(submission_id)</td></tr>
+    <tr><td>审核通过率</td><td>通过数 &divide; 已审核数</td><td>已通过 / (已通过 + 已拒绝) &times; 100%</td></tr>
+    <tr><td>积分发放总量</td><td>已发放积分总和</td><td>SUM(reward_amount) WHERE reward_type = 'points'</td></tr>
+    <tr><td>奖品发放数量</td><td>活动中累计发放成功的奖品数量</td><td>COUNT(reward_id) WHERE status = '已到账'</td></tr>
+  </tbody>
+</table>
+
+<h3>2.3 用户端 H5 功能</h3>
+
+<h4>2.3.2 任务详情页</h4>
+<p><strong>路由</strong>：<code>/tasks/:id</code></p>
+<p><strong>场景一（加粉任务）详情展示</strong>：</p>
+<table>
+  <thead><tr><th>区域</th><th>内容</th></tr></thead>
+  <tbody>
+    <tr><td>任务状态切换器</td><td>浮动切换器，仅展示「进行中」和「已关闭」两个选项</td></tr>
+    <tr><td>关注目标列表</td><td>展示所有需关注的账号，每个账号显示：平台 Logo、账号名称、示例截图、完成状态</td></tr>
+    <tr><td>奖励说明</td><td>随奖品类型动态变化，支持星云币、红包、赠品与抽奖机会</td></tr>
+    <tr><td>奖励进度条</td><td>展示已发放/待发放/未完成的奖励数量，绿色进度条</td></tr>
+    <tr><td>关注完成状态</td><td>每账号完成状态，已完成显示绿色「已发奖」标签</td></tr>
+    <tr><td>操作按钮</td><td>「提交关注凭证」；抽奖机会场景显示「去抽奖」</td></tr>
+  </tbody>
+</table>
+
+<h4>2.3.5 奖品页面</h4>
+<p><strong>路由</strong>：<code>/rewards</code> | <strong>页面标题</strong>：「我的奖品」</p>
+<p><strong>Tab 筛选栏</strong>：全部 / 星币 / 赠品 / 红包 / 优惠券</p>
+<p>奖品卡片展示：封面图(74&times;74) + 奖品名称 + 状态徽章（已领取/待发放/已失效）+ 中奖时间 + 查看按钮</p>
+
+<h3>2.4 后端业务逻辑</h3>
+<pre>加粉任务创建逻辑：
+1. 商家填写任务配置信息
+2. 校验：任务名称非空、时间合法、账号列表非空、奖品配置非空
+3. 生成任务 ID，初始化状态
+4. 保存任务记录
+
+加粉凭证审核逻辑：
+- 通过 → 创建奖励记录 → 待到账
+- 拒绝 → 记录原因 → 关联奖励已失效 → 通知用户
+
+注：加粉任务支持「已关闭」状态，关闭后用户无法参与，但待审核的奖励通过会正常发放。</pre>
+</div>
+
+<!-- Section 3 -->
+<div class="card" id="s3">
+<h2>3. 场景二：内容互动</h2>
+
+<h3>3.1 场景定义</h3>
+<p>商家创建「内容互动」任务，指定一条公域平台内容（笔记/短视频），要求用户对该内容完成指定的互动动作（点赞、评论、收藏），用户完成后上传互动截图凭证，审核通过即获得奖励。</p>
+
+<h3>3.2 商家后台功能</h3>
+
+<h4>3.2.1 任务创建与配置</h4>
+<p><strong>入口</strong>：<code>/backend/tasks/create?scene=engagement</code></p>
+<table>
+  <thead><tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>任务名称</td><td>文本</td><td>是</td><td>如「重点内容互动助推」</td></tr>
+    <tr><td>互动平台</td><td>下拉选择</td><td>是</td><td>小红书、抖音</td></tr>
+    <tr><td>内容链接模式</td><td>单选</td><td>是</td><td>「粘贴链接」/「上传分享图」。抖音平台仅支持链接模式</td></tr>
+    <tr><td>内容链接</td><td>URL</td><td>条件</td><td>链接模式时必填</td></tr>
+    <tr><td>内容分享图</td><td>图片上传</td><td>条件</td><td>分享图模式时必填，支持预览/删除/放大</td></tr>
+    <tr><td>互动动作</td><td>多选</td><td>是</td><td>点赞、评论、收藏，至少 1 个</td></tr>
+    <tr><td>评论关键词</td><td>文本</td><td>条件</td><td>勾选评论时必填</td></tr>
+    <tr><td>奖品配置</td><td>奖品弹窗</td><td>是</td><td>积分、现金红包、抽奖机会</td></tr>
+  </tbody>
+</table>
+
+<h4>3.3.1 H5 任务详情页（互动场景）</h4>
+<p><strong>活动状态切换器</strong>（浮动）：「未开始」「进行中」「已结束」</p>
+<p><strong>内容查看切换器</strong>（浮动）：「内容链接」和「分享图」，控制 <code>?contentView=</code> 参数</p>
+
+<h4>3.4 后端业务逻辑</h4>
+<pre>内容互动任务创建逻辑：
+1. 校验：任务名称、时间、平台、互动动作、评论关键词、内容链接/分享图
+2. 生成任务 ID，初始化状态，保存记录
+
+互动凭证审核逻辑（同加粉场景）：
+自动审核：截图质量、标题匹配、互动状态可见、关键词匹配
+人工审核：账号匹配、动作完成、评论内容</pre>
+</div>
+
+<!-- Section 4 -->
+<div class="card" id="s4">
+<h2>4. 共用功能模块</h2>
+
+<h3>4.1 账号认证系统</h3>
+<p><strong>路由</strong>：<code>/account</code>（认证中心）、<code>/account/verify/:platform</code></p>
+<p><strong>支持平台</strong>：小红书、抖音、哔哩哔哩、微博</p>
+<p><strong>认证状态</strong>：去认证 → 认证中 → 已认证 / 认证失败</p>
+
+<h3>4.3 奖励引擎</h3>
+<table>
+  <thead><tr><th>类型</th><th>说明</th><th>支持场景</th></tr></thead>
+  <tbody>
+    <tr><td>积分</td><td>数字积分</td><td>加粉、互动</td></tr>
+    <tr><td>现金红包</td><td>微信支付发放</td><td>加粉、互动</td></tr>
+    <tr><td>赠品</td><td>实物/虚拟赠品</td><td>加粉、互动</td></tr>
+    <tr><td>抽奖机会</td><td>关联转盘活动，弹窗选择</td><td>加粉、互动</td></tr>
+  </tbody>
+</table>
+<p><strong>发放时机</strong>：after_review（审核后 N 天）/ after_end（活动结束后）</p>
+
+<h3>4.4 平台徽章系统</h3>
+<table>
+  <thead><tr><th>平台</th><th>品牌色</th></tr></thead>
+  <tbody>
+    <tr><td>小红书</td><td><code>#FF385C</code></td></tr>
+    <tr><td>抖音</td><td><code>#161823</code></td></tr>
+    <tr><td>快手</td><td><code>#FF4906</code></td></tr>
+    <tr><td>视频号</td><td><code>#07C160</code></td></tr>
+    <tr><td>哔哩哔哩</td><td><code>#00A1D6</code></td></tr>
+    <tr><td>微博</td><td><code>#E6162D</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- Section 5 -->
+<div class="card" id="s5">
+<h2>5. 数据模型</h2>
+
+<h3>5.1 核心实体</h3>
+
+<h4>Task（激励任务）</h4>
+<table>
+  <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>id</td><td>string</td><td>任务唯一 ID</td></tr>
+    <tr><td>scene</td><td>enum</td><td>follow / engagement / seeding / engagement_reward</td></tr>
+    <tr><td>name</td><td>string</td><td>任务名称</td></tr>
+    <tr><td>status</td><td>enum</td><td>未开始 / 进行中 / 已结束 / 已关闭</td></tr>
+    <tr><td colspan="3" style="background:#f0f2ff;font-weight:700;color:#667eea;">加粉场景专属</td></tr>
+    <tr><td>followTargets</td><td>FollowTarget[]</td><td>关注目标账号列表</td></tr>
+    <tr><td>followRewardMode</td><td>enum</td><td>all_accounts / per_account</td></tr>
+    <tr><td colspan="3" style="background:#f0f2ff;font-weight:700;color:#667eea;">互动场景专属</td></tr>
+    <tr><td>engagementContentMode</td><td>enum</td><td>link / share_image</td></tr>
+    <tr><td>engagementContentUrl</td><td>string</td><td>目标内容链接</td></tr>
+    <tr><td>engagementShareImage</td><td>string</td><td>内容分享图 URL</td></tr>
+    <tr><td>engagementActions</td><td>EngagementAction[]</td><td>互动动作列表</td></tr>
+  </tbody>
+</table>
+
+<h4>ManagedAccount（管理账号）</h4>
+<table>
+  <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>id</td><td>string</td><td>账号 ID</td></tr>
+    <tr><td>platform</td><td>Platform</td><td>平台</td></tr>
+    <tr><td>accountName</td><td>string</td><td>账号名称</td></tr>
+    <tr><td>profileImage</td><td>string</td><td>主页截图 URL</td></tr>
+    <tr><td>totalFollowers</td><td>number</td><td>任务引流关注数</td></tr>
+  </tbody>
+</table>
+
+<h4>RewardRecord（奖励记录）</h4>
+<table>
+  <thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>prizeType</td><td>enum</td><td>积分 / 赠品 / 现金红包 / 抽奖机会</td></tr>
+    <tr><td>prizeName</td><td>string</td><td>奖品名称（用户端可见）</td></tr>
+    <tr><td>prizeImage</td><td>string</td><td>奖品图片 URL</td></tr>
+    <tr><td>status</td><td>enum</td><td>已领取 / 未领取</td></tr>
+  </tbody>
+</table>
+
+<h3>5.2 枚举类型</h3>
+<pre>Platform        = "小红书" | "抖音" | "快手" | "视频号" | "哔哩哔哩" | "微博"
+TaskScene       = "follow" | "engagement" | "seeding" | "engagement_reward"
+TaskStatus      = "进行中" | "未开始" | "已结束" | "已关闭"
+SubmissionStatus = "待审核" | "已通过" | "已拒绝"
+RewardStatus    = "待到账" | "已到账" | "已失效"
+PrizeType       = "积分" | "赠品" | "现金红包" | "抽奖机会"
+EngagementContentMode = "link" | "share_image"</pre>
+</div>
+
+<!-- Section 6 -->
+<div class="card" id="s6">
+<h2>6. 非功能需求</h2>
+
+<h3>6.1 性能要求</h3>
+<table>
+  <thead><tr><th>指标</th><th>要求</th></tr></thead>
+  <tbody>
+    <tr><td>凭证提交响应时间</td><td>&lt; 3 秒（P90）</td></tr>
+    <tr><td>自动审核响应时间</td><td>&lt; 10 秒（P90）</td></tr>
+    <tr><td>平台整体并发</td><td>500 QPS</td></tr>
+  </tbody>
+</table>
+
+<h3>6.3 风控规则</h3>
+<table>
+  <thead><tr><th>规则</th><th>说明</th></tr></thead>
+  <tbody>
+    <tr><td>提交上限</td><td>每用户每任务最多 N 条（默认 1）</td></tr>
+    <tr><td>全局日限</td><td>同一用户每日 &le; 10 条</td></tr>
+    <tr><td>重复提交</td><td>同一内容链接不可重复提交</td></tr>
+    <tr><td>奖励前校验</td><td>到账前检查内容是否仍可访问</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- Section 7 -->
+<div class="card" id="s7">
+<h2>7. 关键业务流程图</h2>
+
+<h3>7.1 互动加粉完整流程</h3>
+<pre>商家创建加粉任务
+    ├── 配置关注目标账号列表
+    ├── 配置奖励规则
+    └── 发布任务
+         ▼
+用户在小程序看到任务
+    ├── 查看需关注的账号列表和示例截图
+    ├── 逐个前往平台关注账号
+    ├── 逐个上传关注截图
+    └── 提交关注凭证
+         ▼
+审核流程（AI 自动 + 人工）
+    ├── 通过 → 创建奖励 → 待到账 → T+N 到账
+    └── 拒绝 → 记录原因 → 通知用户 → 可重新提交
+
+注：加粉任务支持「已关闭」状态，关闭后用户无法参与。</pre>
+
+<h3>7.2 内容互动完整流程</h3>
+<pre>商家创建互动任务
+    ├── 指定目标内容（链接/分享图）
+    ├── 指定互动动作
+    └── 发布任务
+         ▼
+用户在小程序看到任务
+    ├── 点击「去互动」前往平台
+    ├── 完成互动动作
+    ├── 上传互动截图
+    └── 提交互动凭证
+         ▼
+审核流程（AI 自动 + 人工）
+    ├── 通过 → 创建奖励 → 待到账 → T+N 到账
+    └── 拒绝 → 记录原因 → 通知用户</pre>
+</div>
+
+<!-- Section 8 -->
+<div class="card" id="s8">
+<h2>8. 两个场景的功能对比</h2>
+<table>
+  <thead><tr><th>维度</th><th>互动加粉</th><th>内容互动</th></tr></thead>
+  <tbody>
+    <tr><td>场景目标</td><td>引导用户关注官方账号</td><td>引导用户对指定内容互动</td></tr>
+    <tr><td>用户操作</td><td>关注账号 + 上传截图</td><td>点赞/评论/收藏 + 上传截图</td></tr>
+    <tr><td>任务配置核心</td><td>关注目标账号列表 + 场景攻略开关</td><td>目标内容（链接/分享图）+ 互动动作</td></tr>
+    <tr><td>提交凭证</td><td>每个账号独立截图</td><td>1 张互动完成截图</td></tr>
+    <tr><td>H5 状态切换</td><td>进行中/已关闭（2 选项）</td><td>未开始/进行中/已结束（3 选项）</td></tr>
+    <tr><td>H5 Hero 横幕</td><td>不展示</td><td>展示</td></tr>
+    <tr><td>奖励进度</td><td>展示奖励进度条</td><td>不展示</td></tr>
+    <tr><td>内容查看模式</td><td>不适用</td><td>链接/分享图切换</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- Section 9 -->
+<div class="card" id="s9">
+<h2>9. 验收标准</h2>
+
+<h3>9.1 互动加粉</h3>
+<ul class="checklist">
+  <li>商家可成功创建加粉任务，配置关注目标和奖励</li>
+  <li>任务列表正确展示加粉任务，筛选和操作功能正常</li>
+  <li>用户端正确展示加粉任务详情和关注目标列表</li>
+  <li>用户可为每个目标账号上传截图并提交凭证</li>
+  <li>审核工作台正确展示加粉凭证，通过/拒绝操作正常</li>
+  <li>审核通过后奖励正确进入待到账状态</li>
+  <li>数据详情页 KPI 和明细数据正确</li>
+</ul>
+
+<h3>9.2 内容互动</h3>
+<ul class="checklist">
+  <li>商家可成功创建互动任务，配置目标内容和互动动作</li>
+  <li>用户端正确展示互动任务详情和目标内容</li>
+  <li>用户可上传互动截图并提交凭证</li>
+  <li>审核工作台正确展示互动凭证</li>
+  <li>审核通过后奖励正确进入待到账状态</li>
+</ul>
+
+<h3>9.3 通用</h3>
+<ul class="checklist">
+  <li>账号认证流程正常</li>
+  <li>消息通知系统正常</li>
+  <li>奖励引擎各类型奖励发放正确</li>
+  <li>风控规则有效</li>
+</ul>
+</div>
+
+<!-- Section 10 -->
+<div class="card" id="s10">
+<h2>10. 待确认项目</h2>
+<ul class="checklist">
+  <li>第三方数据服务商选型及 API 能力边界</li>
+  <li>商家积分/优惠券系统对接接口规范</li>
+  <li>奖励到账时间策略（T+N 的 N 值是否可由商家自行配置）</li>
+  <li>AI 自动审核的付费模式和定价策略</li>
+  <li>微信小程序订阅消息模板配置</li>
+  <li>现金红包发放的微信企业付款资质审批进度</li>
+</ul>
+</div>
+
+</div>
+
+</body>
+</html>

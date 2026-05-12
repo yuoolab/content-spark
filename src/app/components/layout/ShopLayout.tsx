@@ -263,6 +263,31 @@ export function ShopLayout() {
         <MonitorPlay size={16} />
         预览小程序
       </Link>
+      <button
+        type="button"
+        onClick={() => window.open('/content-spark/prd.html')}
+        style={{
+          position: 'fixed',
+          left: '16px',
+          bottom: '72px',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '12px 14px',
+          borderRadius: '16px',
+          background: '#fff',
+          border: '1px solid rgba(16,185,129,0.18)',
+          boxShadow: '0 14px 36px rgba(15,23,42,0.14)',
+          color: '#059669',
+          fontSize: '13px',
+          fontWeight: 700,
+          cursor: 'pointer',
+        }}
+      >
+        <FileText size={16} />
+        查看 PRD
+      </button>
       <PageAnnotations scope="backend" />
     </div>
   );

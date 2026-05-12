@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
-import { ArrowLeft, LayoutDashboard, LayoutList, Share2, User } from "lucide-react";
+import { ArrowLeft, FileText, LayoutDashboard, LayoutList, Share2, User } from "lucide-react";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { PageAnnotations } from "../components/annotations/PageAnnotations";
 import { useUserH5 } from "./state";
@@ -400,6 +400,33 @@ export function NavShell() {
       >
         <LayoutDashboard size={14} />
         预览后台
+      </button>
+
+      <button
+        type="button"
+        onClick={() => window.open("/content-spark/prd.html")}
+        style={{
+          position: "fixed",
+          left: "max(16px, calc(50% - (var(--h5-frame-width) / 2) - 130px))",
+          bottom: "68px",
+          zIndex: 25,
+          height: 42,
+          padding: "0 14px",
+          borderRadius: 999,
+          border: "1px solid rgba(16,185,129,0.18)",
+          background: "rgba(255,255,255,0.96)",
+          color: "#059669",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 12, fontWeight: 700,
+          cursor: "pointer",
+          boxShadow: "0 14px 34px rgba(16,185,129,0.18)",
+          backdropFilter: "blur(14px)",
+        }}
+      >
+        <FileText size={14} />
+        查看 PRD
       </button>
 
       {showGiftSwitcher && (
