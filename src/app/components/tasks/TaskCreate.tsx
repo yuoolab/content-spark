@@ -357,7 +357,7 @@ export function TaskCreate() {
                           <div style={{ fontSize: 14, fontWeight: 700, color: '#172033' }}>
                             {item.accountName || '未命名账号'}
                           </div>
-                          <div style={{ marginTop: 2 }}>
+                          <div style={{ marginTop: 2, display: 'inline-flex', width: 'fit-content', alignSelf: 'flex-start' }}>
                             <PlatformBadge platform={item.platform as "小红书" | "抖音" | "快手" | "视频号" | "哔哩哔哩" | "微博"} size="sm" />
                           </div>
                         </div>

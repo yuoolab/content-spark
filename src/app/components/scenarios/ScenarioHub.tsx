@@ -1,22 +1,22 @@
 import { Link } from 'react-router';
 import {
-  AtSign,
   BarChart3,
+  Bookmark,
   Heart,
   Sparkles,
-  ArrowRight,
   TrendingUp,
   Users,
   Target,
-  Zap,
   BookOpen,
-  ChevronRight,
   ShieldCheck,
   Search,
   Repeat,
   DollarSign,
+  MessageCircle,
+  ThumbsUp,
+  UserPlus,
 } from 'lucide-react';
-import type { ElementType } from 'react';
+import type { ElementType, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 
 function useBreakpoint() {
@@ -39,7 +39,6 @@ const FUNNEL_STEPS: Array<{
   label: string;
   stage: string;
   stageLabel: string;
-  tagline: string;
   description: string;
   valuePoints: string[];
   icon: ElementType;
@@ -194,31 +193,190 @@ const CASES: Array<{
   },
 ];
 
-const COMBO_STRATEGIES: Array<{
-  name: string;
-  description: string;
-  scenes: SceneKey[];
-  color: string;
-}> = [
-  {
-    name: '新品牌冷启动',
-    description: '快速积累种子用户与初始口碑内容',
-    scenes: ['follow', 'engagement'],
-    color: '#0f766e',
-  },
-  {
-    name: '大促爆发期',
-    description: '集中引爆 UGC 声量，筛选高效 KOC',
-    scenes: ['seeding', 'engagement_reward'],
-    color: '#7c3aed',
-  },
-  {
-    name: '全域增长闭环',
-    description: '从蓄水到转化的完整营销漏斗',
-    scenes: ['follow', 'engagement', 'seeding', 'engagement_reward'],
-    color: '#1d4ed8',
-  },
-];
+function getHeroGradient(scene: SceneKey) {
+  if (scene === 'follow') return 'linear-gradient(135deg, #064e3b 0%, #0f766e 48%, #14b8a6 100%)';
+  if (scene === 'engagement') return 'linear-gradient(135deg, #7c2d12 0%, #c2410c 48%, #fb923c 100%)';
+  if (scene === 'seeding') return 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 48%, #60a5fa 100%)';
+  return 'linear-gradient(135deg, #4c1d95 0%, #7c3aed 48%, #c084fc 100%)';
+}
+
+function SceneIllustration({ scene }: { scene: SceneKey }) {
+  return (
+    <div
+      style={{
+        height: 260,
+        borderRadius: 18,
+        background: 'rgba(255,255,255,0.16)',
+        border: '1px solid rgba(255,255,255,0.26)',
+        boxShadow: '0 24px 56px rgba(15,23,42,0.24)',
+        padding: 18,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      {scene === 'follow' && <FollowIllustration />}
+      {scene === 'engagement' && <EngagementIllustration />}
+      {scene === 'seeding' && <SeedingIllustration />}
+      {scene === 'engagement_reward' && <RewardIllustration />}
+    </div>
+  );
+}
+
+function PhoneShell({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        width: 210,
+        height: 232,
+        borderRadius: 22,
+        background: '#f8fafc',
+        border: '6px solid rgba(15,23,42,0.82)',
+        boxShadow: '0 18px 36px rgba(15,23,42,0.28)',
+        overflow: 'hidden',
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function FollowIllustration() {
+  return (
+    <PhoneShell>
+      <div style={{ height: '100%', background: '#fff', padding: 14, boxSizing: 'border-box' }}>
+        <div style={{ height: 72, borderRadius: 12, background: 'linear-gradient(135deg, #fee2e2 0%, #fff7ed 100%)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: -22 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 999, background: '#fff', border: '3px solid #fff', boxShadow: '0 4px 12px rgba(15,23,42,0.12)' }} />
+          <div style={{ display: 'grid', gap: 5, flex: 1, paddingTop: 20 }}>
+            <div style={{ width: 96, height: 10, borderRadius: 999, background: '#172033' }} />
+            <div style={{ width: 70, height: 8, borderRadius: 999, background: '#cbd5e1' }} />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 16 }}>
+          {['笔记', '粉丝', '获赞'].map((label, index) => (
+            <div key={label} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#172033' }}>{[38, 1280, 6420][index]}</div>
+              <div style={{ fontSize: 10, color: '#64748b' }}>{label}</div>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          style={{
+            marginTop: 14,
+            width: '100%',
+            height: 34,
+            borderRadius: 999,
+            border: 'none',
+            background: '#ff2442',
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 800,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+          }}
+        >
+          <UserPlus size={15} />
+          关注小红书主页
+        </button>
+      </div>
+    </PhoneShell>
+  );
+}
+
+function EngagementIllustration() {
+  return (
+    <PhoneShell>
+      <div style={{ height: '100%', background: '#fff', padding: 14, boxSizing: 'border-box' }}>
+        <div style={{ height: 118, borderRadius: 14, background: 'linear-gradient(135deg, #fed7aa 0%, #fee2e2 100%)', padding: 12, boxSizing: 'border-box' }}>
+          <div style={{ width: 88, height: 10, borderRadius: 999, background: 'rgba(255,255,255,0.84)' }} />
+          <div style={{ width: 130, height: 8, borderRadius: 999, background: 'rgba(255,255,255,0.58)', marginTop: 10 }} />
+        </div>
+        <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+          {[
+            { icon: ThumbsUp, label: '点赞', value: '2,486' },
+            { icon: MessageCircle, label: '评论', value: '318' },
+            { icon: Bookmark, label: '收藏', value: '756' },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 26 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#334155', fontSize: 12, fontWeight: 700 }}>
+                  <Icon size={16} color="#ff2442" />
+                  {item.label}
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 800, color: '#172033' }}>{item.value}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </PhoneShell>
+  );
+}
+
+function SeedingIllustration() {
+  return (
+    <PhoneShell>
+      <div style={{ height: '100%', background: '#f8fafc', padding: 14, boxSizing: 'border-box' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {[0, 1, 2, 3].map((item) => (
+            <div
+              key={item}
+              style={{
+                height: item % 2 === 0 ? 78 : 96,
+                borderRadius: 12,
+                background: item % 2 === 0
+                  ? 'linear-gradient(135deg, #bfdbfe 0%, #dbeafe 100%)'
+                  : 'linear-gradient(135deg, #fde68a 0%, #fed7aa 100%)',
+              }}
+            />
+          ))}
+        </div>
+        <div style={{ marginTop: 12, padding: '9px 10px', borderRadius: 12, background: '#fff', border: '1px solid #e2e8f0' }}>
+          <div style={{ width: 136, height: 10, borderRadius: 999, background: '#172033' }} />
+          <div style={{ width: 104, height: 8, borderRadius: 999, background: '#cbd5e1', marginTop: 8 }} />
+          <div style={{ marginTop: 10, display: 'inline-flex', padding: '4px 8px', borderRadius: 999, background: '#dbeafe', color: '#1d4ed8', fontSize: 11, fontWeight: 800 }}>
+            已发布原创内容
+          </div>
+        </div>
+      </div>
+    </PhoneShell>
+  );
+}
+
+function RewardIllustration() {
+  return (
+    <PhoneShell>
+      <div style={{ height: '100%', background: '#fff', padding: 14, boxSizing: 'border-box' }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#172033' }}>效果种草榜单</div>
+        <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+          {[86, 68, 48].map((width, index) => (
+            <div key={width} style={{ display: 'grid', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>KOC {index + 1}</span>
+                <span style={{ fontSize: 11, color: '#7c3aed', fontWeight: 800 }}>达标</span>
+              </div>
+              <div style={{ height: 8, borderRadius: 999, background: '#ede9fe', overflow: 'hidden' }}>
+                <div style={{ width: `${width}%`, height: '100%', borderRadius: 999, background: '#7c3aed' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 18, borderRadius: 14, background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', padding: 14 }}>
+          <div style={{ fontSize: 24, fontWeight: 900, color: '#6d28d9', lineHeight: 1 }}>TOP 10</div>
+          <div style={{ marginTop: 6, fontSize: 12, lineHeight: 1.5, color: '#5b21b6', fontWeight: 700 }}>
+            按互动表现结算额外奖励
+          </div>
+        </div>
+      </div>
+    </PhoneShell>
+  );
+}
 
 export function ScenarioHub() {
   const bp = useBreakpoint();
@@ -227,156 +385,191 @@ export function ScenarioHub() {
   const pad = isMobile ? '20px 16px' : isTablet ? '28px 24px' : '36px 40px';
   const maxW = '1060px';
 
-  const [hoveredCard, setHoveredCard] = useState<SceneKey | null>(null);
   const [hoveredCase, setHoveredCase] = useState<number | null>(null);
   const [hoveredData, setHoveredData] = useState<number | null>(null);
+  const [activeHeroScene, setActiveHeroScene] = useState<SceneKey>('follow');
   const [feedbackScene, setFeedbackScene] = useState<SceneKey | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const activeScene = FUNNEL_STEPS.find((scene) => scene.value === activeHeroScene) ?? FUNNEL_STEPS[0];
+  const heroTitle = '玩转内容种草';
+  const heroDescription = '在小红书、抖音等主流平台，通过「账号加粉 → 内容互动 → 内容种草 → 效果种草」的全链路运营，帮助达人或品牌精准获客、高效转化，并沉淀私域实现持续复购。';
+  const getSceneConfigPath = (scene: SceneKey) => {
+    if (scene === 'follow') return '/backend/follow';
+    if (scene === 'engagement') return '/backend/tasks';
+    return '';
+  };
+
+  useEffect(() => {
+    const sceneOrder: SceneKey[] = ['follow', 'engagement', 'seeding', 'engagement_reward'];
+    const timer = window.setInterval(() => {
+      setActiveHeroScene((current) => {
+        const currentIndex = sceneOrder.indexOf(current);
+        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % sceneOrder.length;
+        return sceneOrder[nextIndex];
+      });
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', background: '#f7f8fa' }}>
       {/* ============ Hero Section ============ */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #f0f9ff 0%, #eff6ff 30%, #eef2ff 60%, #f5f3ff 100%)',
-          padding: isMobile ? '20px 16px 18px' : '28px 40px 28px',
+          background: getHeroGradient(activeHeroScene),
+          padding: isMobile ? '20px 16px 16px' : '34px 40px 28px',
           position: 'relative',
           overflow: 'hidden',
-          borderBottom: '1px solid #e0e7ff',
+          borderBottom: '1px solid rgba(15,23,42,0.08)',
+          transition: 'background 0.25s ease',
         }}
       >
-        {/* Decorative shapes */}
         <div
           style={{
-            position: 'absolute',
-            top: '-40px',
-            right: '-20px',
-            width: '200px',
-            height: '200px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(139,92,246,0.04) 100%)',
-            pointerEvents: 'none',
+            position: 'relative',
+            maxWidth: maxW,
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 360px',
+            gap: isMobile ? '18px' : '30px',
+            alignItems: 'center',
           }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '-60px',
-            left: '25%',
-            width: '160px',
-            height: '160px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(59,130,246,0.05) 0%, rgba(99,102,241,0.03) 100%)',
-            pointerEvents: 'none',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '200px',
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            background: 'rgba(139,92,246,0.04)',
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div style={{ position: 'relative', maxWidth: '900px' }}>
-          <div
-            style={{
-              fontSize: isMobile ? '20px' : '26px',
-              fontWeight: 800,
-              lineHeight: 1.35,
-              letterSpacing: '-0.02em',
-              background: 'linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            玩转内容种草
+        >
+          <div>
+            <div
+              style={{
+                color: '#fff',
+                fontSize: isMobile ? '30px' : '52px',
+                fontWeight: 800,
+                lineHeight: 1.12,
+                letterSpacing: 0,
+              }}
+            >
+              {heroTitle}
+            </div>
+            <div
+              style={{
+                marginTop: '14px',
+                fontSize: isMobile ? '13px' : '15px',
+                color: 'rgba(255,255,255,0.88)',
+                lineHeight: 1.75,
+                maxWidth: '620px',
+              }}
+            >
+              {heroDescription}
+            </div>
           </div>
 
-          <div
-            style={{
-              marginTop: '10px',
-              fontSize: isMobile ? '13px' : '14px',
-              color: '#475569',
-              lineHeight: 1.7,
-              maxWidth: '620px',
-            }}
-          >
-            在小红书、抖音等主流平台，通过「账号加粉 → 内容互动 → 内容种草 → 效果种草」的全链路运营，
-            帮助达人或品牌精准获客、高效转化，并沉淀私域实现持续复购。
-          </div>
+          {!isMobile && <SceneIllustration scene={activeHeroScene} />}
 
-          {/* Funnel steps */}
           <div
             style={{
-              marginTop: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0',
-              flexWrap: 'wrap',
+              gridColumn: isMobile ? '1' : '1 / -1',
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, minmax(0, 1fr))',
+              gap: '12px',
+              marginTop: isMobile ? 0 : '8px',
             }}
           >
-            {['蓄水 · 私域沉淀', '助推 · 流量撬动', '造势 · UGC 规模化', '转化 · KOC 孵化'].map(
-              (step, i) => {
-                const colors = ['#0f766e', '#c2410c', '#1d4ed8', '#7c3aed'];
-                return (
-                  <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
-                    <div
+            {FUNNEL_STEPS.map((scene, i) => {
+              const Icon = scene.icon;
+              const active = activeHeroScene === scene.value;
+              const configPath = getSceneConfigPath(scene.value);
+              const pending = scene.value === 'seeding' || scene.value === 'engagement_reward';
+              return (
+                <div
+                  key={scene.value}
+                  onClick={() => setActiveHeroScene(scene.value)}
+                  style={{
+                    minHeight: isMobile ? 72 : 118,
+                    border: active ? '1px solid rgba(255,255,255,0.72)' : '1px solid rgba(255,255,255,0.16)',
+                    borderRadius: '10px',
+                    background: active ? 'rgba(255,255,255,0.92)' : 'rgba(15,23,42,0.34)',
+                    color: active ? '#172033' : '#fff',
+                    padding: isMobile ? '10px 12px' : '16px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    display: 'grid',
+                    gap: '8px',
+                    boxShadow: active ? '0 14px 34px rgba(15,23,42,0.20)' : 'none',
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setActiveHeroScene(scene.value);
+                    }
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
                       style={{
-                        display: 'flex',
+                        width: 26,
+                        height: 26,
+                        borderRadius: 8,
+                        background: active ? scene.bg : 'rgba(255,255,255,0.16)',
+                        color: active ? scene.color : '#fff',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        padding: '5px 14px',
-                        borderRadius: '100px',
-                        background: '#fff',
-                        border: `1px solid ${colors[i]}20`,
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        justifyContent: 'center',
+                        flexShrink: 0,
                       }}
                     >
+                      <Icon size={15} />
+                    </span>
+                    <div style={{ display: 'grid', gap: 2, minWidth: 0 }}>
+                      <span style={{ fontSize: '10px', fontWeight: 800, color: active ? scene.color : 'rgba(255,255,255,0.76)' }}>STEP {i + 1}</span>
+                      <span style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 800 }}>{scene.label}</span>
+                    </div>
+                  </div>
+                  {!isMobile && (
+                    <div style={{ fontSize: '12px', lineHeight: 1.55, color: active ? '#475569' : 'rgba(255,255,255,0.74)' }}>
+                      {scene.description}
+                    </div>
+                  )}
+                  <div style={{ marginTop: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {pending ? (
                       <span
                         style={{
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          background: colors[i],
+                          height: 28,
+                          padding: '0 12px',
+                          borderRadius: 6,
+                          border: active ? '1px solid rgba(148,163,184,0.72)' : '1px solid rgba(148,163,184,0.55)',
+                          background: active ? 'rgba(148,163,184,0.34)' : 'rgba(148,163,184,0.20)',
                           color: '#fff',
-                          fontSize: '10px',
+                          fontSize: 12,
                           fontWeight: 700,
                           display: 'inline-flex',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
                         }}
                       >
-                        {i + 1}
+                        敬请期待
                       </span>
-                      <span
+                    ) : (
+                      <Link
+                        to={configPath}
+                        onClick={(event) => event.stopPropagation()}
                         style={{
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          color: colors[i],
-                          whiteSpace: 'nowrap',
+                          height: 28,
+                          padding: '0 12px',
+                          borderRadius: 6,
+                          background: active ? scene.color : 'rgba(255,255,255,0.22)',
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
                         }}
                       >
-                        {step}
-                      </span>
-                    </div>
-                    {i < 3 && (
-                      <ChevronRight
-                        size={14}
-                        style={{ color: '#cbd5e1', margin: '0 6px', flexShrink: 0 }}
-                      />
+                        去配置
+                      </Link>
                     )}
                   </div>
-                );
-              },
-            )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -437,233 +630,6 @@ export function ScenarioHub() {
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* ============ Scenario Matrix ============ */}
-      <div style={{ padding: isMobile ? '0 16px 24px' : '0 40px 36px', maxWidth: maxW }}>
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--foreground)' }}>
-            四大场景能力矩阵
-          </div>
-          <div style={{ marginTop: '4px', fontSize: '13px', color: MODULE_DESC_COLOR }}>
-            按照营销漏斗逻辑，从关注到转化的完整链路 —— 结合 BGC（品牌内容）、UGC（用户打卡）、PGC（达人探店）三维内容运营策略
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '14px' }}>
-          {FUNNEL_STEPS.map((scene, i) => {
-            const Icon = scene.icon;
-            const hovered = hoveredCard === scene.value;
-            return (
-              <div
-                key={scene.value}
-                onMouseEnter={() => setHoveredCard(scene.value)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  background: '#fff',
-                  border: '1px solid var(--border)',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  transition: 'box-shadow 0.25s, transform 0.25s',
-                  boxShadow: hovered
-                    ? '0 12px 32px rgba(0,0,0,0.1)'
-                    : '0 1px 4px rgba(0,0,0,0.04)',
-                  transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '8px 14px',
-                    background: scene.gradient,
-                    borderBottom: `1px solid ${scene.color}18`,
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        fontWeight: 700,
-                        color: scene.color,
-                        background: '#fff',
-                        padding: '1px 7px',
-                        borderRadius: '100px',
-                        letterSpacing: '0.03em',
-                      }}
-                    >
-                      STEP {i + 1}
-                    </span>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: scene.color }}>
-                      {scene.stage}·{scene.stageLabel}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ padding: '14px 14px 16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                    <span
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '9px',
-                        background: scene.bg,
-                        color: scene.color,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon size={18} />
-                    </span>
-                    <div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--foreground)' }}>
-                        {scene.label}
-                      </div>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: scene.color }}>
-                        {scene.tagline}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: MODULE_DESC_COLOR,
-                      lineHeight: 1.6,
-                      marginBottom: '12px',
-                      flex: 1,
-                    }}
-                  >
-                    {scene.description}
-                  </div>
-
-                  {(scene.value === 'seeding' || scene.value === 'engagement_reward') ? (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', alignSelf: 'flex-start' }}>
-                      <button
-                        type="button"
-                        onClick={() => { setFeedbackScene(scene.value); setFeedbackText(''); setFeedbackSubmitted(false); }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '4px',
-                          padding: '7px 16px',
-                          borderRadius: '7px',
-                          background: scene.color,
-                          color: '#fff',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          border: 'none',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        创建任务
-                        <ArrowRight size={13} />
-                      </button>
-                      <span style={{ fontSize: '12px', color: '#9ca3af', fontWeight: 500 }}>
-                        敬请期待
-                      </span>
-                    </div>
-                  ) : (
-                    <Link
-                      to={scene.value === 'engagement' ? '/backend/tasks' : `/backend/tasks/create?scene=${scene.value}`}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '4px',
-                        padding: '7px 16px',
-                        borderRadius: '7px',
-                        background: scene.color,
-                        color: '#fff',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        textDecoration: 'none',
-                        transition: 'opacity 0.15s',
-                        alignSelf: 'flex-start',
-                      }}
-                    >
-                      创建任务
-                      <ArrowRight size={13} />
-                    </Link>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ============ Combo Strategies ============ */}
-      <div style={{ padding: isMobile ? '0 16px 24px' : '0 40px 36px', maxWidth: maxW }}>
-        <div style={{ marginBottom: '18px' }}>
-          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--foreground)' }}>
-            组合策略推荐
-          </div>
-          <div style={{ marginTop: '4px', fontSize: '13px', color: MODULE_DESC_COLOR }}>
-            根据业务阶段选择合适的场景组合，实现 1+1 &gt; 2 的营销效果
-          </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
-          {COMBO_STRATEGIES.map((combo) => (
-            <div
-              key={combo.name}
-              style={{
-                background: '#fff',
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                padding: '20px',
-              }}
-            >
-              <div
-                style={{
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  color: combo.color,
-                  marginBottom: '6px',
-                }}
-              >
-                {combo.name}
-              </div>
-              <div
-                style={{
-                  fontSize: '12.5px',
-                  color: MODULE_DESC_COLOR,
-                  lineHeight: 1.5,
-                  marginBottom: '14px',
-                }}
-              >
-                {combo.description}
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                {combo.scenes.map((key) => {
-                  const scene = FUNNEL_STEPS.find((s) => s.value === key)!;
-                  return (
-                    <span
-                      key={key}
-                      style={{
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        padding: '3px 10px',
-                        borderRadius: '100px',
-                        background: scene.bg,
-                        color: scene.color,
-                      }}
-                    >
-                      {scene.label}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 
