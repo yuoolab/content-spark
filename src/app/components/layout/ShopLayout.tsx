@@ -67,7 +67,8 @@ export function ShopLayout() {
     pathname === '/backend/review' ||
     pathname === '/backend/verification' ||
     pathname === '/backend/platform-config' ||
-    pathname === '/backend/dashboard';
+    pathname === '/backend/dashboard' ||
+    pathname === '/backend/scenarios';
 
   const isMemberArea = pathname.startsWith('/backend/member/');
   const isMemberMarketingActive = isShopAreaActive && !isMemberArea;

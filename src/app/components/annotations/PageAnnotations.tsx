@@ -180,7 +180,7 @@ const annotations: Annotation[] = [
     match: (pathname) => pathname === "/backend/dashboard",
     interactions: [
       "旧数据看板入口已下线并重定向到任务管理。",
-      "进入内容激励计划后默认打开任务管理。",
+      "进入内容种草后默认打开任务管理。",
       "顶部可切换到内容审核。",
       "左下角预览按钮进入 H5 端页面。",
     ],

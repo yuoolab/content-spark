@@ -7,13 +7,12 @@ import {
   Flame,
   Heart,
   Plus,
-  Save,
-  Send,
   Sparkles,
   Trash2,
   Users,
 } from 'lucide-react';
 import { DateRangePicker } from '../ui/DateRangePicker';
+import { PlatformBadge } from '../platform/PlatformBadge';
 
 type SceneKey = 'follow' | 'engagement' | 'seeding' | 'engagement_reward';
 type RewardType = 'points' | 'cash' | 'gift';
@@ -21,6 +20,7 @@ type FollowRewardMode = 'all_accounts' | 'per_account';
 type PrizeType = 'points' | 'gift' | 'wechat_redpacket' | 'lottery_chance';
 type RedpacketType = 'lucky' | 'fixed';
 type EngagementContentMode = 'link' | 'share_image';
+type FollowTabKey = 'task' | 'account' | 'follow_data';
 
 type PrizeConfig = {
   prizeType: PrizeType;
@@ -134,7 +134,9 @@ export function TaskCreate() {
   const [previewImageUrl, setPreviewImageUrl] = useState('');
   const [showPrizeModal, setShowPrizeModal] = useState(false);
   const [showLotteryActivityModal, setShowLotteryActivityModal] = useState(false);
-  const [followTab, setFollowTab] = useState<'task' | 'account'>(followTabParam === 'account' ? 'account' : 'task');
+  const [followTab, setFollowTab] = useState<FollowTabKey>(
+    followTabParam === 'account' ? 'account' : followTabParam === 'follow_data' ? 'follow_data' : 'task',
+  );
   const [draggingFollowIndex, setDraggingFollowIndex] = useState<number | null>(null);
   const [prizeError, setPrizeError] = useState('');
   const [selectedPrize, setSelectedPrize] = useState<PrizeConfig | null>(null);
@@ -169,9 +171,9 @@ export function TaskCreate() {
     maxPerUser: 1,
     followTargets: [{ platform: '小红书', account: '', sampleImage: null as File | null, sampleImagePreview: '', guideText: '' }],
     followManagedAccounts: [
-      { id: 'fa_1', platform: '小红书', accountName: '品牌官方小红书', profileImage: null as File | null, profileImagePreview: '', totalFollowers: 1280 },
-      { id: 'fa_2', platform: '抖音', accountName: '品牌官方抖音号', profileImage: null as File | null, profileImagePreview: '', totalFollowers: 960 },
-    ] as Array<{ id: string; platform: string; accountName: string; profileImage: File | null; profileImagePreview: string; totalFollowers: number }>,
+      { id: 'fa_1', platform: '小红书', accountName: '品牌官方小红书', profileImage: null as File | null, profileImagePreview: '', totalFollowers: 1280, accountAddedAt: '2023-03-18' },
+      { id: 'fa_2', platform: '抖音', accountName: '品牌官方抖音号', profileImage: null as File | null, profileImagePreview: '', totalFollowers: 960, accountAddedAt: '2023-08-09' },
+    ] as Array<{ id: string; platform: string; accountName: string; profileImage: File | null; profileImagePreview: string; totalFollowers: number; accountAddedAt: string }>,
     followRuleDescription: '',
     followPlaybookDescription: '',
     followPlaybookEnabled: true,
@@ -226,7 +228,7 @@ export function TaskCreate() {
     event.preventDefault();
     setShowValidation(true);
     if (requiredMissing) return;
-    navigate('/backend/tasks');
+    navigate(scene === 'follow' ? '/backend/follow' : '/backend/tasks');
   };
 
   const reorderFollowTargets = (fromIndex: number, toIndex: number) => {
@@ -263,7 +265,7 @@ export function TaskCreate() {
     setShowLotteryActivityModal(false);
   };
 
-  const switchFollowTab = (tab: 'task' | 'account') => {
+  const switchFollowTab = (tab: FollowTabKey) => {
     setFollowTab(tab);
     const next = new URLSearchParams(searchParams);
     next.set('tab', tab);
@@ -272,7 +274,8 @@ export function TaskCreate() {
 
   useEffect(() => {
     if (scene !== 'follow') return;
-    const tabFromQuery = searchParams.get('tab') === 'account' ? 'account' : 'task';
+    const tabValue = searchParams.get('tab');
+    const tabFromQuery: FollowTabKey = tabValue === 'account' ? 'account' : tabValue === 'follow_data' ? 'follow_data' : 'task';
     if (tabFromQuery !== followTab) setFollowTab(tabFromQuery);
   }, [scene, searchParams, followTab]);
 
@@ -318,19 +321,71 @@ export function TaskCreate() {
   return (
     <div style={pageStyle}>
       <div style={shellStyle}>
+        {scene !== 'follow' && (
         <button type="button" onClick={() => navigate('/backend/tasks')} style={backButtonStyle}>
           <ArrowLeft size={15} />
           创建{sceneMeta.label}
         </button>
+        )}
 
         {scene === 'follow' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 10, width: '100%' }}>
             <button type="button" onClick={() => switchFollowTab('task')} style={followTabButtonStyle(followTab === 'task')}>任务配置</button>
             <button type="button" onClick={() => switchFollowTab('account')} style={followTabButtonStyle(followTab === 'account')}>账号管理</button>
+            <button type="button" onClick={() => switchFollowTab('follow_data')} style={followTabButtonStyle(followTab === 'follow_data')}>关注数据</button>
           </div>
         )}
         <form onSubmit={submit} noValidate style={contentGridStyle}>
-          {scene === 'follow' && followTab === 'account' ? (
+          {scene === 'follow' && followTab === 'follow_data' ? (
+            <Panel title="关注数据">
+              <Field label="账号关注统计">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, width: 'min(980px, 100%)' }}>
+                  {formData.followManagedAccounts.map((item) => (
+                    <div
+                      key={`stats-${item.id}`}
+                      style={{
+                        border: '1px solid #e2e8f0',
+                        borderRadius: 12,
+                        background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)',
+                        padding: 12,
+                        display: 'grid',
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <div style={{ display: 'grid', gap: 2 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#172033' }}>
+                            {item.accountName || '未命名账号'}
+                          </div>
+                          <div style={{ marginTop: 2 }}>
+                            <PlatformBadge platform={item.platform as "小红书" | "抖音" | "快手" | "视频号" | "哔哩哔哩" | "微博"} size="sm" />
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: 8,
+                          borderTop: '1px solid #e8eef7',
+                          paddingTop: 10,
+                        }}
+                      >
+                        <div style={{ display: 'grid', gap: 4 }}>
+                          <span style={{ fontSize: 11, color: '#94a3b8' }}>任务带来关注</span>
+                          <span style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>{item.totalFollowers}</span>
+                        </div>
+                        <div style={{ display: 'grid', gap: 4 }}>
+                          <span style={{ fontSize: 11, color: '#94a3b8' }}>账号添加时间</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>{item.accountAddedAt || '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Field>
+            </Panel>
+          ) : scene === 'follow' && followTab === 'account' ? (
             <Panel title="账号管理">
               <Field label="平台账号维护">
                 <div style={{ display: 'grid', gap: 8 }}>
@@ -401,7 +456,7 @@ export function TaskCreate() {
                           next[idx] = { ...next[idx], accountName: event.target.value.slice(0, 20) };
                           setFormData({ ...formData, followManagedAccounts: next });
                         }}
-                        placeholder="请输入账号名称"
+                        placeholder={item.platform === '抖音' ? '请输入抖音号' : '请输入小红书号'}
                         style={baseInputStyle}
                       />
                       <input
@@ -527,7 +582,7 @@ export function TaskCreate() {
                         followManagedAccounts:
                             formData.followManagedAccounts.length >= 20
                               ? formData.followManagedAccounts
-                              : [...formData.followManagedAccounts, { id: `fa_${Date.now()}`, platform: '小红书', accountName: '', profileImage: null, profileImagePreview: '', totalFollowers: 0 }],
+                              : [...formData.followManagedAccounts, { id: `fa_${Date.now()}`, platform: '小红书', accountName: '', profileImage: null, profileImagePreview: '', totalFollowers: 0, accountAddedAt: '2026-01-01' }],
                       })
                     }
                     disabled={formData.followManagedAccounts.length >= 20}
@@ -1963,23 +2018,24 @@ export function TaskCreate() {
         {showValidation && requiredMissing && (
           <div style={errorBoxStyle}>还有必填项未完成，请检查红色提示字段。</div>
         )}
-        <div style={bottomActionBarStyle}>
-          <button type="button" onClick={() => navigate('/backend/tasks')} style={secondaryButtonStyle}>
-            取消
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setShowValidation(true);
-              if (requiredMissing) return;
-              navigate('/backend/tasks');
-            }}
-            style={{ ...primaryButtonStyle, background: '#1d4ed8' }}
-          >
-            {id ? <Save size={15} /> : <Send size={15} />}
-            保存
-          </button>
-        </div>
+        {scene !== 'follow' && (
+          <div style={bottomActionBarStyle}>
+            <button type="button" onClick={() => navigate('/backend/tasks')} style={secondaryButtonStyle}>
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowValidation(true);
+                if (requiredMissing) return;
+                navigate('/backend/tasks');
+              }}
+              style={{ ...primaryButtonStyle, background: '#1d4ed8' }}
+            >
+              保存
+            </button>
+          </div>
+        )}
 
         {previewImageUrl && (
           <div

@@ -49,7 +49,7 @@ const interactiveCards = [
     iconBg: '#F0FFF4',
   },
   {
-    title: '内容激励计划',
+    title: '内容种草',
     desc: '激励用户在小红书、抖音等平台发布内容，获得互动奖励',
     tag: '最新',
     tagColor: '#52C41A',

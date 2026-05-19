@@ -1,21 +1,27 @@
-import { Outlet, Link, useLocation } from 'react-router';
+import { Outlet, Link, useLocation, useSearchParams } from 'react-router';
 
-import { CheckSquare, FileText } from 'lucide-react';
+import { CheckSquare, FileText, Sparkles, Users } from 'lucide-react';
 
 const navItems = [
-  { path: '/backend/tasks', label: '任务管理', icon: FileText },
+  { path: '/backend/scenarios', label: '玩转内容种草', icon: Sparkles },
+  { path: '/backend/follow', label: '账号加粉', icon: Users },
+  { path: '/backend/tasks', label: '内容互动', icon: FileText },
   { path: '/backend/review', label: '内容审核', icon: CheckSquare },
 ];
 
 export function DashboardLayout() {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isReviewRoute = location.pathname === '/backend/review' || location.pathname.startsWith('/backend/review/');
 
+  const isScenariosRoute = location.pathname === '/backend/scenarios';
+  const isFollowRoute = location.pathname === '/backend/follow' || (location.pathname === '/backend/tasks/create' && searchParams.get('scene') === 'follow');
+  const isTaskRoute = location.pathname === '/backend/tasks' || (location.pathname.startsWith('/backend/tasks/') && !isFollowRoute);
+
   const isActive = (path: string) => {
-    if (path === '/backend/tasks') {
-      const isTaskRoute = location.pathname === '/backend/tasks' || location.pathname.startsWith('/backend/tasks/');
-      return isTaskRoute || !isReviewRoute;
-    }
+    if (path === '/backend/scenarios') return isScenariosRoute;
+    if (path === '/backend/follow') return isFollowRoute;
+    if (path === '/backend/tasks') return isTaskRoute || (!isReviewRoute && !isScenariosRoute && !isFollowRoute);
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 

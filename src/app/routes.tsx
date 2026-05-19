@@ -9,6 +9,7 @@ import { ShopLayout } from "./components/layout/ShopLayout";
 import { InteractiveMarketing } from "./components/marketing/InteractiveMarketing";
 import { TaskList as BackendTaskList } from "./components/tasks/TaskList";
 import { TaskCreate } from "./components/tasks/TaskCreate";
+import { FollowTask } from "./components/tasks/FollowTask";
 import { ContentReview } from "./components/review/ContentReview";
 import { TaskDataDetail } from "./components/dashboard/TaskDataDetail";
 import { AccountVerification } from "./components/verification/AccountVerification";
@@ -20,6 +21,7 @@ import { MemberProfile } from "./components/members/MemberProfile";
 import { ThirdPartyAccount } from "./components/members/ThirdPartyAccount";
 import { MemberSystem } from "./components/members/MemberSystem";
 import { MemberBenefits } from "./components/members/MemberBenefits";
+import { ScenarioHub } from "./components/scenarios/ScenarioHub";
 
 export const router = createBrowserRouter(
   [
@@ -72,6 +74,8 @@ export const router = createBrowserRouter(
           Component: DashboardLayout,
           children: [
             { path: "dashboard", loader: () => redirect("/backend/tasks") },
+            { path: "scenarios", Component: ScenarioHub },
+            { path: "follow", Component: FollowTask },
             { path: "tasks", Component: BackendTaskList },
             { path: "tasks/create", Component: TaskCreate },
             { path: "tasks/edit/:id", Component: TaskCreate },

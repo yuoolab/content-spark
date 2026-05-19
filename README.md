@@ -1,7 +1,7 @@
 
-  # 内容激励计划
+  # 内容种草
 
-  This is a code bundle for 内容激励计划. The original project is available at https://www.figma.com/design/2llxXnnBhbR6LEYFQ0vIDX/%E5%86%85%E5%AE%B9%E6%BF%80%E5%8A%B1%E8%AE%A1%E5%88%92.
+  This is a code bundle for 内容种草. The original project is available at https://www.figma.com/design/2llxXnnBhbR6LEYFQ0vIDX/%E5%86%85%E5%AE%B9%E6%BF%80%E5%8A%B1%E8%AE%A1%E5%88%92.
 
   ## Running the code
 

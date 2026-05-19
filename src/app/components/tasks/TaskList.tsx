@@ -1,16 +1,12 @@
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import {
-  AtSign,
-  BarChart3,
   Heart,
-  Sparkles,
   Check,
   Search,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ElementType } from 'react';
 import { toast } from 'sonner';
-import { PlatformBadge } from '../platform/PlatformBadge';
 
 interface Task {
   id: string;
@@ -50,20 +46,6 @@ const SCENE_OPTIONS: Array<{
   bg: string;
 }> = [
   { value: 'engagement', label: '内容互动', desc: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推。', playbook: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推', icon: Heart, color: '#c2410c', bg: '#fff7ed' },
-];
-
-const SCENE_CARD_OPTIONS: Array<{
-  value: SceneKey;
-  label: string;
-  playbook: string;
-  icon: ElementType;
-  color: string;
-  bg: string;
-}> = [
-  { value: 'follow', label: '账号加粉', playbook: '引导关注官方社媒账号，适合拉新关注、账号矩阵导流等场景', icon: AtSign, color: '#0f766e', bg: '#ecfdf5' },
-  { value: 'engagement', label: '内容互动', playbook: '指定社媒内容点赞评论收藏，适合给重点笔记、短视频做互动助推', icon: Heart, color: '#c2410c', bg: '#fff7ed' },
-  { value: 'seeding', label: '内容种草', playbook: '发布原创内容并回传链接，适合征集原创笔记、短视频和晒单内容', icon: Sparkles, color: '#1d4ed8', bg: '#eff6ff' },
-  { value: 'engagement_reward', label: '效果种草', playbook: '发布种草内容并达到指定互动量得奖励，适用优质内容筛选、KOC潜力挖掘等场景', icon: BarChart3, color: '#7c3aed', bg: '#f5f3ff' },
 ];
 
 function normalizePlatform(platform: string) {
@@ -426,83 +408,6 @@ export function TaskList() {
           overflow: 'hidden',
         }}
       >
-        <div
-          style={{
-            padding: '16px 18px',
-            borderBottom: '1px solid var(--border)',
-            background: 'linear-gradient(135deg, #ffffff 0%, #f7f9fc 64%, #eef4f7 100%)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', marginBottom: '12px' }}>
-            <div>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--foreground)', lineHeight: 1.3 }}>
-                内容激励计划
-              </div>
-              <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--muted-foreground)' }}>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px' }}>
-            {SCENE_CARD_OPTIONS.map((scene) => {
-              const Icon = scene.icon;
-              return (
-                <Link
-                  key={scene.value}
-                  to={`/backend/tasks/create?scene=${scene.value}`}
-                  style={{
-                    border: `1px solid var(--border)`,
-                    borderRadius: '8px',
-                    background: '#fff',
-                    overflow: 'hidden',
-                    display: 'block',
-                    textDecoration: 'none',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '10px',
-                      padding: '11px 12px 10px',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: '34px',
-                        height: '34px',
-                        borderRadius: '7px',
-                        background: scene.bg,
-                        color: scene.color,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <Icon size={18} />
-                    </span>
-                    <span style={{ minWidth: 0, flex: 1 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <span style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: 'var(--foreground)' }}>
-                          {scene.label}
-                        </span>
-                        <span style={{ color: (scene.value === 'seeding' || scene.value === 'engagement_reward') ? 'var(--muted-foreground)' : 'rgba(36,116,255,1)', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {(scene.value === 'seeding' || scene.value === 'engagement_reward') ? '敬请期待' : '去创建'}
-                        </span>
-                      </span>
-                      <span style={{ display: 'block', marginTop: '3px', fontSize: '12px', color: 'var(--foreground)' }}>
-                        {scene.playbook}
-                      </span>
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Filter Bar */}
         <div
           style={{
@@ -837,6 +742,7 @@ export function TaskList() {
           {/* Reset */}
           {(searchTerm || sceneFilter !== 'engagement' || statusFilter !== 'all' || !!platformFilter) && (
             <button
+              type="button"
               onClick={() => {
                 setSearchTerm('');
                 setSceneFilter('engagement');
@@ -858,6 +764,25 @@ export function TaskList() {
               重置
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => navigate('/backend/tasks/create?scene=engagement')}
+            style={{
+              marginLeft: 'auto',
+              padding: '8px 14px',
+              border: '1px solid #3b5bdb',
+              borderRadius: 'var(--radius)',
+              background: '#3b5bdb',
+              cursor: 'pointer',
+              fontSize: 'var(--text-base)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: '#fff',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            创建任务
+          </button>
 
         </div>
 
