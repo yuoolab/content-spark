@@ -418,7 +418,7 @@ export function ScenarioHub() {
       <div
         style={{
           background: getHeroGradient(activeHeroScene),
-          padding: isMobile ? '20px 16px 16px' : '34px 40px 28px',
+          padding: isMobile ? '24px 16px 22px' : '42px 40px 40px',
           position: 'relative',
           overflow: 'hidden',
           borderBottom: '1px solid rgba(15,23,42,0.08)',
@@ -431,7 +431,7 @@ export function ScenarioHub() {
             maxWidth: maxW,
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 360px',
-            gap: isMobile ? '18px' : '30px',
+            gap: isMobile ? '22px' : '34px',
             alignItems: 'center',
           }}
         >
